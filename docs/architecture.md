@@ -54,12 +54,13 @@ Each installed client should create one local device identity and reuse it for f
 
 Recommended MVP behavior:
 
-- On first successful sign-in, the app creates a `devices` row for that user.
-- The app stores the returned `devices.id` locally.
-- Future launches reuse that stored device ID instead of creating a new row.
-- If the stored device ID no longer exists in Supabase, the app creates a new device row and stores the new ID.
+- On first launch, the app generates one random `client_device_key` for that local install and stores it locally.
+- On first successful sign-in, the app upserts a `devices` row using `(user_id, client_device_key)`.
+- The app can store the returned `devices.id` locally for convenience, but the reusable identity is the `client_device_key`.
+- Future launches reuse the same `client_device_key` instead of creating a new device row.
+- If the stored device row no longer exists in Supabase, the app creates a new device row with the same `client_device_key`.
 - Device names should be user-readable, such as `John's iPhone` or `Windows Laptop`.
-- Device records are not authentication credentials; user sign-in remains the source of trust.
+- Device records and client device keys are not authentication credentials; user sign-in remains the source of trust.
 
 This avoids duplicate device rows while keeping the MVP simple.
 

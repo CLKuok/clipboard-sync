@@ -2,7 +2,7 @@
 
 ## Milestone 1: Project Docs and Structure
 
-Status: in progress.
+Status: accepted.
 
 - Create the planned folder structure.
 - Improve `README.md`.
@@ -24,6 +24,8 @@ Acceptance criteria:
 
 ## Milestone 2: Supabase Foundation
 
+Status: in progress.
+
 - Create a Supabase project.
 - Enable email/password authentication.
 - Run the initial schema migration.
@@ -39,6 +41,9 @@ Acceptance criteria:
 - RLS is enabled on `devices` and `clipboard_items`.
 - Two test users have been used to verify per-user data isolation.
 - Anonymous requests cannot read or write clipboard data.
+- Devices can be registered and associated with their owning users.
+- Clipboard items can be inserted and queried by the owning user.
+- Clipboard items cannot reference another user's device as their source device.
 - Future client apps know which public environment values they need.
 
 ## Milestone 3: Windows Manual Sync

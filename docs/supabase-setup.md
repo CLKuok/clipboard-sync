@@ -40,12 +40,19 @@ The migration creates:
 - `clipboard_items`
 - indexes
 - row-level security policies
+- authenticated role grants
 
 It also enables `pgcrypto` so UUID defaults work through `gen_random_uuid()`.
 
+Expected result:
+
+- The SQL runs without errors on a fresh Supabase project.
+- The table editor shows `devices` and `clipboard_items`.
+- RLS is enabled for both tables.
+
 ## 4. Verify Row-Level Security
 
-Use two test users.
+Use two test users. See [docs/supabase-verification.md](supabase-verification.md) for a step-by-step manual test script.
 
 Checklist:
 
@@ -54,6 +61,7 @@ Checklist:
 - User B cannot read User A's rows.
 - User B cannot update or delete User A's rows.
 - Anonymous requests cannot read or write clipboard data.
+- A clipboard item cannot reference another user's device.
 
 ## 5. Keep Secrets Out of Git
 

@@ -53,6 +53,8 @@ clipboard-sync/
     architecture.md
     roadmap.md
     supabase-schema.md
+    supabase-setup.md
+    supabase-verification.md
   supabase/
     migrations/
     seed.sql
@@ -82,6 +84,8 @@ See [docs/roadmap.md](docs/roadmap.md) for the milestone plan.
 See [docs/supabase-schema.md](docs/supabase-schema.md) and [supabase/migrations/0001_initial_schema.sql](supabase/migrations/0001_initial_schema.sql).
 
 For project setup steps, see [docs/supabase-setup.md](docs/supabase-setup.md).
+
+For manual RLS and data-isolation tests, see [docs/supabase-verification.md](docs/supabase-verification.md).
 
 ## Current Status
 
