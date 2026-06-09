@@ -24,7 +24,7 @@ Acceptance criteria:
 
 ## Milestone 2: Supabase Foundation
 
-Status: in progress.
+Status: complete.
 
 - Create a Supabase project.
 - Enable email/password authentication.
@@ -47,6 +47,8 @@ Acceptance criteria:
 - Future client apps know which public environment values they need.
 
 ## Milestone 3: Windows Manual Sync
+
+Status: in progress.
 
 - Create a beginner-friendly Python app or CLI.
 - Add login and logout.

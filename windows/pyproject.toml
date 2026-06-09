@@ -1,0 +1,29 @@
+[project]
+name = "clipboard-sync-windows"
+version = "0.1.0"
+description = "Windows CLI for manual Clipboard Sync MVP"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pyperclip>=1.9.0",
+  "python-dotenv>=1.0.1",
+  "supabase>=2.10.0",
+]
+
+[project.scripts]
+clipboard-sync-windows = "clipboard_sync.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["clipboard_sync"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

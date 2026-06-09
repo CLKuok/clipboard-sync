@@ -1,6 +1,6 @@
 # Windows App
 
-This folder is reserved for the future Python Windows app.
+This folder contains the Python Windows CLI for manual Clipboard Sync.
 
 MVP requirements:
 
@@ -9,4 +9,57 @@ MVP requirements:
 - Manual latest-text pull into the Windows clipboard.
 - Device registration for the signed-in user.
 
-No Windows application code has been added yet.
+## Setup
+
+Install `uv`, then run commands from this folder:
+
+```powershell
+cd windows
+uv sync
+Copy-Item .env.example .env
+```
+
+Edit `.env` and fill in:
+
+```text
+SUPABASE_URL=your-project-url
+SUPABASE_ANON_KEY=your-anon-public-key
+```
+
+Do not use or store the Supabase service-role key in this app.
+
+## Usage
+
+Login:
+
+```powershell
+uv run clipboard-sync-windows login
+```
+
+Check local session/device state:
+
+```powershell
+uv run clipboard-sync-windows status
+```
+
+Push current Windows clipboard text to Supabase:
+
+```powershell
+uv run clipboard-sync-windows push
+```
+
+Pull latest Supabase clipboard text and copy it to Windows clipboard:
+
+```powershell
+uv run clipboard-sync-windows pull
+```
+
+Logout and remove local session tokens:
+
+```powershell
+uv run clipboard-sync-windows logout
+```
+
+## Local State
+
+The CLI stores session tokens, the reusable `client_device_key`, and the Supabase `device_id` in the current user's app data folder. These values are local machine state and must not be committed.
