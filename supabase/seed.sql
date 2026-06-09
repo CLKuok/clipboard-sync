@@ -1,0 +1,2 @@
+-- Seed data is intentionally empty.
+-- Do not commit real clipboard contents, access tokens, or user secrets.
