@@ -63,3 +63,14 @@ uv run clipboard-sync-windows logout
 ## Local State
 
 The CLI stores session tokens, the reusable `client_device_key`, and the Supabase `device_id` in the current user's app data folder. These values are local machine state and must not be committed.
+
+## Manual Test Result
+
+The Windows CLI has been tested successfully against the live Supabase project.
+
+Confirmed commands:
+
+- `login`: signed in with Supabase email/password and registered/reused the Windows device.
+- `status`: displayed local session and device state.
+- `push`: read Windows clipboard text and inserted it into Supabase.
+- `pull`: fetched the latest clipboard text from Supabase and copied it to the Windows clipboard.
