@@ -48,6 +48,21 @@ Supabase Auth owns user identity. Application tables store `user_id` values refe
 
 Every device and clipboard item belongs to exactly one user. Row-level security policies enforce that users only access their own rows.
 
+## Device Identity and Reuse
+
+Each installed client should create one local device identity and reuse it for future syncs.
+
+Recommended MVP behavior:
+
+- On first successful sign-in, the app creates a `devices` row for that user.
+- The app stores the returned `devices.id` locally.
+- Future launches reuse that stored device ID instead of creating a new row.
+- If the stored device ID no longer exists in Supabase, the app creates a new device row and stores the new ID.
+- Device names should be user-readable, such as `John's iPhone` or `Windows Laptop`.
+- Device records are not authentication credentials; user sign-in remains the source of trust.
+
+This avoids duplicate device rows while keeping the MVP simple.
+
 ## Explicit Non-Goals for MVP
 
 - Local discovery.

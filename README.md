@@ -81,6 +81,8 @@ See [docs/roadmap.md](docs/roadmap.md) for the milestone plan.
 
 See [docs/supabase-schema.md](docs/supabase-schema.md) and [supabase/migrations/0001_initial_schema.sql](supabase/migrations/0001_initial_schema.sql).
 
+For project setup steps, see [docs/supabase-setup.md](docs/supabase-setup.md).
+
 ## Current Status
 
 The project is in the planning and foundation stage. Documentation, architecture decisions, folder structure, and Supabase schema are being created first. Application code for iOS and Windows has not been written yet.

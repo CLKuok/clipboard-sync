@@ -20,7 +20,8 @@ This file defines the project rules and architecture decisions for AI agents and
 - Do not add clipboard automation yet.
 - Do not add image, file, rich text, or binary clipboard sync yet.
 - Do not create a custom backend unless Supabase cannot satisfy a requirement.
-- Do not write application code until the current docs/schema milestone is complete.
+- Do not write application code outside the active milestone.
+- Before starting a new milestone, make sure the previous milestone acceptance criteria in `docs/roadmap.md` are satisfied or explicitly deferred.
 
 ## Architecture Decisions
 
@@ -39,6 +40,7 @@ This file defines the project rules and architecture decisions for AI agents and
 - Never commit Supabase service-role keys.
 - Never commit access tokens, refresh tokens, `.env` files, or real clipboard contents.
 - Use anon/public client keys only in client apps, and rely on RLS for authorization.
+- Keep `.specstory/` ignored by default because it is local AI-session history, not project source.
 
 ## Documentation Rules
 
@@ -46,4 +48,5 @@ This file defines the project rules and architecture decisions for AI agents and
 - Prefer small milestones over broad rewrites.
 - Record major architecture decisions in `docs/architecture.md`.
 - Keep Supabase schema details in `docs/supabase-schema.md`.
+- Keep Supabase project setup steps in `docs/supabase-setup.md`.
 - Keep roadmap status in `docs/roadmap.md`.

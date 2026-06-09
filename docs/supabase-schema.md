@@ -38,6 +38,12 @@ The SQL migration lives at:
 supabase/migrations/0001_initial_schema.sql
 ```
 
+The migration enables `pgcrypto` with `create extension if not exists pgcrypto;` so `gen_random_uuid()` is available for UUID primary keys.
+
+## Setup Instructions
+
+See [docs/supabase-setup.md](supabase-setup.md) for the beginner setup checklist.
+
 ## Security
 
 Row-level security must be enabled for both tables.
