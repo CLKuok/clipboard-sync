@@ -4,7 +4,7 @@ import SwiftUI
 struct ClipboardSyncApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(configuration: AppConfiguration.load())
         }
     }
 }

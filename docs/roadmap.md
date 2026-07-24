@@ -68,7 +68,7 @@ Acceptance criteria:
 
 ## Milestone 4: iPhone Manual Sync
 
-Status: not started.
+Status: in progress.
 
 - Create a SwiftUI iPhone app.
 - Add login and logout.
@@ -84,6 +84,11 @@ Acceptance criteria:
 - Manual push uploads text entered or pasted by the user.
 - Manual pull displays the latest synced text.
 - Auth, empty text, and sync failure states are visible to the user.
+
+Verification in progress:
+
+- The app and its mocked unit tests build and run on the iPhone 17 Pro/iOS 26.5 simulator.
+- Live Supabase, Windows-to-iPhone, iPhone-to-Windows, session-restoration, and physical-iPhone checks remain.
 
 ## Milestone 5: MVP Hardening
 
