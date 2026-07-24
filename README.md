@@ -2,7 +2,7 @@
 
 Clipboard Sync is a simple cross-platform clipboard synchronization project for iPhone and Windows.
 
-The first milestone is intentionally small: text-only clipboard sync, manual push/pull, secure user accounts, and Supabase as the primary synchronization backend. This keeps the MVP reliable on university and public Wi-Fi networks, including networks such as eduroam where direct device-to-device local networking may be blocked.
+The MVP is intentionally small: text-only clipboard sync, manual push/pull, secure user accounts, and Supabase as the primary synchronization backend. This keeps the MVP reliable on university and public Wi-Fi networks, including networks such as eduroam where direct device-to-device local networking may be blocked.
 
 ## MVP Scope
 
@@ -89,4 +89,6 @@ For manual RLS and data-isolation tests, see [docs/supabase-verification.md](doc
 
 ## Current Status
 
-The project is in the planning and foundation stage. Documentation, architecture decisions, folder structure, and Supabase schema are being created first. Application code for iOS and Windows has not been written yet.
+Milestones 1–3 are implemented. The project documentation and Supabase foundation are in place, and the Windows Python CLI supports email/password login, reusable device registration, and manual text push and pull.
+
+The SwiftUI iPhone app in Milestone 4 has not started. The `ios/` folder currently contains placeholders and requirements only.

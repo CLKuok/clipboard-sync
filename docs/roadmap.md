@@ -68,6 +68,8 @@ Acceptance criteria:
 
 ## Milestone 4: iPhone Manual Sync
 
+Status: not started.
+
 - Create a SwiftUI iPhone app.
 - Add login and logout.
 - Register or reuse an iPhone device record.
