@@ -93,9 +93,9 @@ def handle_push(_: argparse.Namespace) -> None:
 
     sync = SupabaseSync(load_config())
     sync.use_session(state)
-    if not state.device_id:
-        sync.ensure_windows_device(state, default_device_name())
-        store.save(state)
+    device_name = state.device_name or default_device_name()
+    sync.ensure_windows_device(state, device_name)
+    store.save(state)
 
     content = read_text()
     item = sync.push_clipboard_text(state, content)
