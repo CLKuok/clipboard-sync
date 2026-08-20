@@ -1,6 +1,6 @@
 # iPhone App
 
-`ClipboardSync/ClipboardSync.xcodeproj` is the iPhone-only SwiftUI client for Milestone 4. It uses Supabase Swift for email/password authentication and manual text synchronization.
+`ClipboardSync/ClipboardSync.xcodeproj` is the completed Milestone 4 iPhone-only SwiftUI client. It targets iOS 17 or later and uses Supabase Swift for email/password authentication and manual text synchronization.
 
 The app can:
 
@@ -18,19 +18,13 @@ It does not monitor or change the iPhone clipboard automatically.
 
 The project contains safe placeholder values so it builds without secrets. A real Supabase connection uses an ignored local file.
 
-1. In Terminal, move to the repository:
-
-   ```bash
-   cd /Users/andykuok/Documents/Project/clipboard-sync
-   ```
-
-2. Create the ignored local configuration from the example:
+1. From the repository root, create the ignored local configuration from the example:
 
    ```bash
    cp ios/ClipboardSync/Config/Supabase.example.xcconfig ios/ClipboardSync/Config/Supabase.xcconfig
    ```
 
-3. Open `ios/ClipboardSync/Config/Supabase.xcconfig` in VS Code. Replace only the two placeholder values:
+2. Open `ios/ClipboardSync/Config/Supabase.xcconfig` in a text editor. Replace only the two placeholder values:
 
    ```text
    SUPABASE_URL = https:/$()/your-project-ref.supabase.co
@@ -39,7 +33,7 @@ The project contains safe placeholder values so it builds without secrets. A rea
 
    Keep `$()` between the URL slashes; `.xcconfig` files otherwise interpret `//` as a comment. Use the project base URL and the publishable or legacy anon key. Never use a secret or service-role key.
 
-4. Confirm Git ignores the local file:
+3. Confirm Git ignores the local file:
 
    ```bash
    git status --short
@@ -69,7 +63,7 @@ xcodebuild -project ios/ClipboardSync/ClipboardSync.xcodeproj \
   test
 ```
 
-The tests use a mocked sync service. They require no Supabase credentials and do not contact the live project.
+The 17 tests use a mocked sync service. They require no Supabase credentials and do not contact the live project.
 
 ## Live acceptance checklist
 
