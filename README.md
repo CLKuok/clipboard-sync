@@ -89,6 +89,6 @@ For manual RLS and data-isolation tests, see [docs/supabase-verification.md](doc
 
 ## Current Status
 
-Milestones 1–3 are implemented. The project documentation and Supabase foundation are in place, and the Windows Python CLI supports email/password login, reusable device registration, and manual text push and pull.
+Milestones 1–3 are complete. The project documentation and Supabase foundation are in place, and the Windows Python CLI supports email/password login, reusable device registration, and manual text push and pull.
 
-The SwiftUI iPhone app in Milestone 4 has not started. The `ios/` folder currently contains placeholders and requirements only.
+Milestone 4 is in progress. A minimal iPhone-only SwiftUI app now exists with Supabase Swift, public client configuration, email/password authentication, session restoration, device registration, and manual text push/pull. Its mocked test suite and unconfigured simulator launch pass; live Supabase, cross-platform, and physical-iPhone verification remain before the milestone can be marked complete.

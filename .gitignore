@@ -218,3 +218,10 @@ __marimo__/
 .streamlit/secrets.toml
 
 .specstory/
+
+# macOS / Xcode
+.DS_Store
+DerivedData/
+xcuserdata/
+*.xcuserstate
+ios/ClipboardSync/Config/Supabase.xcconfig

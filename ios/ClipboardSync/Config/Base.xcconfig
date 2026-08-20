@@ -1,0 +1,6 @@
+// Safe defaults keep a fresh checkout buildable. Copy the example file to
+// Supabase.xcconfig and replace both values to connect to a real project.
+SUPABASE_URL = https:/$()/your-project-ref.supabase.co
+SUPABASE_ANON_KEY = your-publishable-or-anon-key
+
+#include? "Supabase.xcconfig"
