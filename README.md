@@ -4,6 +4,20 @@ Clipboard Sync is a simple cross-platform clipboard synchronization project for 
 
 The MVP is intentionally small: text-only clipboard sync, manual push/pull, secure user accounts, and Supabase as the primary synchronization backend. This keeps the MVP reliable on university and public Wi-Fi networks, including networks such as eduroam where direct device-to-device local networking may be blocked.
 
+## Current Status
+
+Milestones 1–4 are complete. The Supabase foundation, Windows Python CLI, and iPhone SwiftUI client have been implemented and tested. Live verification covers email/password authentication, session restoration, reusable device registration, and manual text sync in both directions between Windows and iPhone.
+
+Milestone 5, MVP hardening, is next. See [docs/roadmap.md](docs/roadmap.md) for acceptance criteria and remaining work.
+
+## Getting Started
+
+1. Create and configure the Supabase project using [docs/supabase-setup.md](docs/supabase-setup.md).
+2. Apply [supabase/migrations/0001_initial_schema.sql](supabase/migrations/0001_initial_schema.sql) and verify RLS with [docs/supabase-verification.md](docs/supabase-verification.md).
+3. Set up the [Windows CLI](windows/README.md) and/or [iPhone app](ios/README.md) with the same Supabase project and Auth user.
+
+Only use a publishable or legacy anon key in the clients. Never use a secret or service-role key.
+
 ## MVP Scope
 
 - iPhone app built with SwiftUI.
@@ -73,7 +87,7 @@ clipboard-sync/
 - Clipboard data is stored per user.
 - Row-level security ensures users can only access their own devices and clipboard items.
 - Anonymous users must not be able to read or write clipboard data.
-- Service-role keys, access tokens, environment files, and real clipboard contents must never be committed.
+- Secret/service-role keys, access tokens, environment files, and real clipboard contents must never be committed.
 
 ## Roadmap
 
@@ -86,9 +100,3 @@ See [docs/supabase-schema.md](docs/supabase-schema.md) and [supabase/migrations/
 For project setup steps, see [docs/supabase-setup.md](docs/supabase-setup.md).
 
 For manual RLS and data-isolation tests, see [docs/supabase-verification.md](docs/supabase-verification.md).
-
-## Current Status
-
-Milestones 1–3 are complete. The project documentation and Supabase foundation are in place, and the Windows Python CLI supports email/password login, reusable device registration, and manual text push and pull.
-
-Milestone 4 is in progress. A minimal iPhone-only SwiftUI app now exists with Supabase Swift, public client configuration, email/password authentication, session restoration, device registration, and manual text push/pull. Its mocked test suite and unconfigured simulator launch pass; live Supabase, cross-platform, and physical-iPhone verification remain before the milestone can be marked complete.
