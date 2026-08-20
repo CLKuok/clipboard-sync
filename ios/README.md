@@ -100,4 +100,5 @@ App Store distribution is outside this milestone.
 
 - 2026-07-24: blank SwiftUI baseline built and its generated test passed on iPhone 17 Pro/iOS 26.5 simulator.
 - 2026-07-24: Supabase-enabled app built, launched to its safe missing-configuration state, and all 17 mocked tests passed on the same simulator.
-- Pending: live Supabase authentication/session restoration, Windows↔iPhone sync, stale-device recovery against the real database, and physical-iPhone verification.
+- 2026-08-21: live Supabase authentication, readable authentication errors, session restoration, logout, iOS device-row reuse, empty states, and Windows↔iPhone manual text sync passed using a development Auth user.
+- Optional follow-up checks: live deleted-device recovery and deployment to a physical iPhone.
