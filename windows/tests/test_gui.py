@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from clipboard_sync.gui import DesktopController
+from clipboard_sync.gui import COLORS, DesktopController, default_device_name
 from clipboard_sync.state import AppState
 from clipboard_sync.supabase_client import AuthenticationRequiredError
 
@@ -68,11 +68,28 @@ def test_gui_push_uses_existing_services_and_clipboard():
     controller, _, sync = _controller(state)
     controller.sync = sync
 
-    length = controller.push("Laptop Windows")
+    content = controller.push("Laptop Windows")
 
-    assert length == len("clipboard text")
+    assert content == "clipboard text"
     sync.ensure_windows_device.assert_called_once_with(state, "Laptop Windows")
     sync.push_clipboard_text.assert_called_once_with(state, "clipboard text")
+
+
+def test_gui_push_can_use_entered_text_without_reading_clipboard():
+    state = AppState(
+        access_token="access",
+        refresh_token="refresh",
+        user_id="user-id",
+        device_id="device-id",
+    )
+    controller, _, sync = _controller(state)
+    controller.sync = sync
+
+    content = controller.push("Laptop Windows", "text entered in the app")
+
+    assert content == "text entered in the app"
+    controller.clipboard_reader.assert_not_called()
+    sync.push_clipboard_text.assert_called_once_with(state, "text entered in the app")
 
 
 def test_gui_empty_pull_does_not_change_clipboard():
@@ -123,3 +140,12 @@ def test_gui_logout_clears_session_and_keeps_returned_install_state():
     assert controller.state is cleared
     assert controller.sync is None
     store.clear_session.assert_called_once_with()
+
+
+def test_gui_theme_has_distinct_feedback_colours():
+    assert COLORS["success"] != COLORS["error"]
+    assert COLORS["info_background"] != COLORS["error_background"]
+
+
+def test_default_device_name_is_user_readable():
+    assert default_device_name().endswith((" Windows", "Windows Device"))

@@ -5,7 +5,7 @@ This folder contains the Python Windows clients for manual Clipboard Sync. Miles
 MVP requirements:
 
 - Supabase email/password authentication.
-- Manual text push from the Windows clipboard.
+- Manual text push from the desktop input or, when using the CLI, the Windows clipboard.
 - Manual latest-text pull into the Windows clipboard.
 - Device registration for the signed-in user.
 
@@ -42,7 +42,9 @@ After setup, launch the graphical Windows app:
 uv run clipboard-sync-windows-gui
 ```
 
-Sign in with the same Supabase Auth user as the iPhone app. The window can push the current Windows clipboard, pull the latest synced text, restore the saved session after reopening, and log out. Expected offline and authentication failures appear in the window rather than as tracebacks.
+Sign in with the same Supabase Auth user as the iPhone app. The window uses the same rounded, grouped Push/Pull layout as the iPhone client. It can push text entered or pasted into the app, pull and display the latest synced text, restore the saved session after reopening, and log out. Expected offline and authentication failures appear as compact in-app feedback rather than tracebacks.
+
+The interface supports keyboard navigation and Enter-to-sign-in. Type or paste text into **Text to push**, then select **Push Text**. If the box is empty, that same explicit action reads and uploads the current Windows clipboard, then shows the uploaded text in the box. **Latest synced text** is selectable and is also copied to the Windows clipboard after a successful pull. The app does not monitor the clipboard in the background and clears both text areas when the user logs out.
 
 This is the first Milestone 6 desktop version. It runs through `uv`; packaging it as a standalone installer is not part of this initial UI slice.
 
@@ -101,7 +103,7 @@ From the `windows` folder:
 uv run pytest -q
 ```
 
-The 31 automated tests do not access the live Supabase project or Windows clipboard. They cover configuration safety, device reuse, session hardening, empty states, failure feedback, desktop-controller behavior, and push/pull behavior.
+The 34 automated tests do not access the live Supabase project or Windows clipboard. They cover configuration safety, device reuse, session hardening, empty states, failure feedback, desktop-controller behavior, presentation constants, entered-text behavior, and push/pull behavior.
 
 ## Manual Test Result
 
@@ -115,3 +117,5 @@ Confirmed commands:
 - `pull`: fetched the latest clipboard text from Supabase and copied it to the Windows clipboard.
 
 Milestone 5 offline feedback passed live Windows testing on 2026-08-21. Public/university Wi-Fi remains an explicitly deferred, non-blocking follow-up.
+
+The Milestone 6 GUI was smoke-tested on Windows on 2026-08-21: the sign-in and signed-in layouts rendered at the intended size and the shared app icon loaded successfully.
