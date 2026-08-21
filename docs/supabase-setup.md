@@ -1,75 +1,108 @@
 # Supabase Setup
 
-This guide describes the setup needed before application development starts.
+This guide recreates the development backend and connects both Clipboard Sync clients. Use synthetic test text and a dedicated Supabase Auth user.
 
-## 1. Create a Supabase Project
+## 1. Create the project
 
-1. Sign in to Supabase.
-2. Create a new project.
-3. Save the project URL and anon public key for future client apps.
-4. Do not commit the service-role key.
+1. Sign in to the [Supabase Dashboard](https://supabase.com/dashboard).
+2. Create a project and wait until provisioning finishes.
+3. Open the project's **Connect** dialog. Copy:
+   - the base project URL, shaped like `https://your-project-ref.supabase.co`;
+   - a publishable key, shaped like `sb_publishable_...`.
+4. If the Connect dialog is unavailable, use **Project Settings → API Keys** for the publishable key and **Project Settings → Data API** for the project URL.
 
-Future apps should use:
+A legacy `anon` key also works, but new client configuration should prefer the publishable key. Never use an `sb_secret_...` or legacy `service_role` key. Supabase's [API key guide](https://supabase.com/docs/guides/getting-started/api-keys) explains the difference.
 
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
+## 2. Enable email/password authentication
 
-These values should live in local environment/config files that are not committed.
+Email authentication is normally enabled by default. Verify it in **Authentication → Sign In / Providers → Email**.
 
-## 2. Enable Authentication
+For development, open **Authentication → Users**, select **Add user**, and create a dedicated test user. This is an app user; it is separate from the account used to sign in to the Supabase Dashboard. Use the same app user's email and password on Windows and iPhone.
 
-For the MVP, use email/password authentication.
+If email confirmation is enabled, confirm the address before testing. See Supabase's [password authentication guide](https://supabase.com/docs/guides/auth/passwords) for current behavior.
 
-Checklist:
+## 3. Apply the existing schema
 
-- Email/password sign-in is enabled.
-- Anonymous sign-ins are not used for clipboard access.
-- Test users can be created for RLS verification.
+Do not design tables manually in Table Editor.
 
-## 3. Run the Migration
+1. Open `supabase/migrations/0001_initial_schema.sql` from this repository and copy all of it.
+2. In Supabase, open **SQL Editor → New query**.
+3. Paste the migration and select **Run**.
+4. Open **Table Editor** and confirm `devices` and `clipboard_items` exist.
+5. Confirm RLS is enabled for both tables.
 
-Apply the initial SQL migration:
+The migration also enables `pgcrypto`, creates the required indexes and authenticated-role grants, and installs the user-isolation policies.
 
-```text
-supabase/migrations/0001_initial_schema.sql
+## 4. Configure Windows
+
+In Windows PowerShell from the repository root:
+
+```powershell
+Set-Location windows
+uv sync
+Copy-Item .env.example .env
 ```
 
-The migration creates:
+Edit the ignored `windows/.env` file:
 
-- `devices`
-- `clipboard_items`
-- indexes
-- row-level security policies
-- authenticated role grants
+```text
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_your-key
+```
 
-It also enables `pgcrypto` so UUID defaults work through `gen_random_uuid()`.
+Then verify login:
 
-Expected result:
+```powershell
+uv run clipboard-sync-windows login --email "your-test-email@example.com"
+uv run clipboard-sync-windows status
+```
 
-- The SQL runs without errors on a fresh Supabase project.
-- The table editor shows `devices` and `clipboard_items`.
-- RLS is enabled for both tables.
+Enter the app user's password at the hidden prompt. A successful status shows `Logged in: yes`, a device ID, and `Client device key: set`. Continue with the full [Windows guide](../windows/README.md).
 
-## 4. Verify Row-Level Security
+## 5. Configure iPhone
 
-Use two test users. See [docs/supabase-verification.md](supabase-verification.md) for a step-by-step manual test script.
+On the Mac, from the repository root:
 
-Checklist:
+```bash
+cp ios/ClipboardSync/Config/Supabase.example.xcconfig ios/ClipboardSync/Config/Supabase.xcconfig
+```
 
-- User A can create and read their own device row.
-- User A can create and read their own clipboard item.
-- User B cannot read User A's rows.
-- User B cannot update or delete User A's rows.
-- Anonymous requests cannot read or write clipboard data.
-- A clipboard item cannot reference another user's device.
+Edit the ignored `Supabase.xcconfig`:
 
-## 5. Keep Secrets Out of Git
+```text
+SUPABASE_URL = https:/$()/your-project-ref.supabase.co
+SUPABASE_ANON_KEY = sb_publishable_your-key
+```
 
-Do not commit:
+The `$()` is required so Xcode does not treat `//` as a comment. Open `ios/ClipboardSync/ClipboardSync.xcodeproj`, select the `ClipboardSync` scheme and an iPhone destination, then run the app and sign in as the same test user. Continue with the full [iPhone guide](../ios/README.md).
 
-- `.env` files.
-- Supabase service-role keys.
-- Access tokens or refresh tokens.
-- Real clipboard contents.
+## 6. Verify security and sync
 
-Only the Supabase anon public key should be used by client apps, and authorization should rely on row-level security.
+Run the complete two-user RLS script in [supabase-verification.md](supabase-verification.md). Its expected results include:
+
+- each user can access only their own devices and clipboard items;
+- anonymous requests cannot read or write application data;
+- a clipboard item cannot reference another user's device.
+
+For client verification, push synthetic text from one platform and pull it on the other. Both clients must use the same Supabase project and Auth user.
+
+## Troubleshooting
+
+- **Configuration error:** use only the HTTPS base URL with no `/rest/v1` suffix, query, or fragment.
+- **Key rejected:** use a publishable or legacy anon key. The clients intentionally reject secret and service-role keys.
+- **Incorrect email or password:** use the app user listed under **Authentication → Users**, not the Supabase Dashboard account unless they happen to be the same.
+- **Session expired:** sign in again. Windows removes invalid local session tokens while retaining its installation device key.
+- **Offline message:** reconnect, complete any public-Wi-Fi captive portal, then retry the same manual action. Draft iPhone text is retained after a retryable failure.
+- **No synced text yet:** no clipboard row exists for this user; this is an empty state and does not modify the Windows clipboard.
+- **RLS or device error:** confirm the migration ran once in the intended project and both clients use that project's URL and key.
+
+## Keep local values out of Git
+
+Never commit:
+
+- `.env` or `Supabase.xcconfig` files;
+- secret or service-role keys;
+- access or refresh tokens;
+- real clipboard contents.
+
+Before publishing changes, inspect `git status` and the staged diff. Client authorization must continue to rely on Supabase Auth and RLS.

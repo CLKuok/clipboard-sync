@@ -38,12 +38,20 @@ final class SupabaseSyncService: ClipboardSyncServicing, @unchecked Sendable {
     }
 
     func signIn(email: String, password: String) async throws -> AppSession {
-        let session = try await client.auth.signIn(email: email, password: password)
-        return Self.mapSession(session)
+        do {
+            let session = try await client.auth.signIn(email: email, password: password)
+            return Self.mapSession(session)
+        } catch {
+            throw Self.mapError(error, operation: .signIn)
+        }
     }
 
     func signOut() async throws {
-        try await client.auth.signOut()
+        do {
+            try await client.auth.signOut()
+        } catch {
+            throw Self.mapError(error, operation: .signOut)
+        }
     }
 
     func upsertDevice(_ request: DeviceUpsertRequest) async throws -> UUID {
@@ -54,15 +62,19 @@ final class SupabaseSyncService: ClipboardSyncServicing, @unchecked Sendable {
             lastSeenAt: Date()
         )
 
-        let row: DeviceRow = try await client
-            .from("devices")
-            .upsert(payload, onConflict: "user_id,client_device_key")
-            .select("id")
-            .single()
-            .execute()
-            .value
+        do {
+            let row: DeviceRow = try await client
+                .from("devices")
+                .upsert(payload, onConflict: "user_id,client_device_key")
+                .select("id")
+                .single()
+                .execute()
+                .value
 
-        return row.id
+            return row.id
+        } catch {
+            throw Self.mapError(error, operation: .registerDevice)
+        }
     }
 
     func pushText(_ request: ClipboardPushRequest) async throws -> ClipboardItem {
@@ -72,27 +84,89 @@ final class SupabaseSyncService: ClipboardSyncServicing, @unchecked Sendable {
             contentType: request.contentType
         )
 
-        let row: ClipboardRow = try await client
-            .from("clipboard_items")
-            .insert(payload)
-            .select("id,source_device_id,content,content_type,created_at")
-            .single()
-            .execute()
-            .value
+        do {
+            let row: ClipboardRow = try await client
+                .from("clipboard_items")
+                .insert(payload)
+                .select("id,source_device_id,content,content_type,created_at")
+                .single()
+                .execute()
+                .value
 
-        return row.item
+            return row.item
+        } catch {
+            throw Self.mapError(error, operation: .pushText)
+        }
     }
 
     func pullLatest(query: LatestClipboardQuery) async throws -> ClipboardItem? {
-        let rows: [ClipboardRow] = try await client
-            .from("clipboard_items")
-            .select("id,source_device_id,content,content_type,created_at")
-            .order(query.orderColumn, ascending: query.ascending)
-            .limit(query.limit)
-            .execute()
-            .value
+        do {
+            let rows: [ClipboardRow] = try await client
+                .from("clipboard_items")
+                .select("id,source_device_id,content,content_type,created_at")
+                .order(query.orderColumn, ascending: query.ascending)
+                .limit(query.limit)
+                .execute()
+                .value
 
-        return rows.first?.item
+            return rows.first?.item
+        } catch {
+            throw Self.mapError(error, operation: .pullText)
+        }
+    }
+
+    static func mapError(_ error: Error, operation: SyncOperation) -> SyncServiceError {
+        if isOffline(error) {
+            return .offline
+        }
+
+        if let authError = error as? AuthError {
+            if operation == .signIn, authError.errorCode == .invalidCredentials {
+                return .invalidCredentials
+            }
+
+            let authenticationCodes: Set<ErrorCode> = [
+                .badJWT,
+                .invalidJWT,
+                .noAuthorization,
+                .refreshTokenAlreadyUsed,
+                .refreshTokenNotFound,
+                .sessionExpired,
+                .sessionNotFound,
+                .userNotFound,
+            ]
+            if authenticationCodes.contains(authError.errorCode) {
+                return .authenticationRequired
+            }
+        }
+
+        return .operationFailed(operation)
+    }
+
+    private static func isOffline(_ error: Error) -> Bool {
+        var current: NSError? = error as NSError
+        var visited: Set<ObjectIdentifier> = []
+        let offlineCodes: Set<Int> = [
+            URLError.cannotConnectToHost.rawValue,
+            URLError.cannotFindHost.rawValue,
+            URLError.dataNotAllowed.rawValue,
+            URLError.dnsLookupFailed.rawValue,
+            URLError.internationalRoamingOff.rawValue,
+            URLError.networkConnectionLost.rawValue,
+            URLError.notConnectedToInternet.rawValue,
+            URLError.timedOut.rawValue,
+        ]
+
+        while let candidate = current {
+            let identifier = ObjectIdentifier(candidate)
+            guard visited.insert(identifier).inserted else { break }
+            if candidate.domain == NSURLErrorDomain, offlineCodes.contains(candidate.code) {
+                return true
+            }
+            current = candidate.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+
+        return false
     }
 
     private static func mapSession(_ session: Session) -> AppSession {

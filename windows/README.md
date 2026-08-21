@@ -72,6 +72,15 @@ uv run clipboard-sync-windows logout
 
 The CLI stores session tokens, the reusable `client_device_key`, and the Supabase `device_id` in the current user's app data folder. These values are local machine state and must not be committed.
 
+If a saved session is no longer valid, the CLI asks you to log in again and clears only the invalid account/session data. The stable installation device key is preserved.
+
+## Empty and failure states
+
+- An empty or whitespace-only clipboard is rejected without contacting Supabase.
+- If no synced row exists, `pull` reports `No synced text yet` and leaves the Windows clipboard unchanged.
+- Offline, invalid-login, expired-session, and sync failures produce one readable `Error:` line instead of a traceback.
+- After an offline or temporary sync failure, reconnect and run the same command again.
+
 ## Run tests
 
 From the `windows` folder:
@@ -80,7 +89,7 @@ From the `windows` folder:
 uv run pytest -q
 ```
 
-The 10 automated tests do not access the live Supabase project or Windows clipboard.
+The 24 automated tests do not access the live Supabase project or Windows clipboard. They cover configuration safety, device reuse, session hardening, empty states, failure feedback, and push/pull behavior.
 
 ## Manual Test Result
 
@@ -92,3 +101,5 @@ Confirmed commands:
 - `status`: displayed local session and device state.
 - `push`: read Windows clipboard text and inserted it into Supabase.
 - `pull`: fetched the latest clipboard text from Supabase and copied it to the Windows clipboard.
+
+Milestone 5 offline and public/university Wi-Fi live checks are pending.

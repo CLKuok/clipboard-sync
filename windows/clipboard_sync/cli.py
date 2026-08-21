@@ -9,8 +9,12 @@ import sys
 
 from clipboard_sync.clipboard import ClipboardError, read_text, write_text
 from clipboard_sync.config import ConfigError, load_config
-from clipboard_sync.state import StateStore
-from clipboard_sync.supabase_client import SupabaseSync, SyncError
+from clipboard_sync.state import AppState, StateStore
+from clipboard_sync.supabase_client import (
+    AuthenticationRequiredError,
+    SupabaseSync,
+    SyncError,
+)
 
 
 def main() -> None:
@@ -92,7 +96,7 @@ def handle_push(_: argparse.Namespace) -> None:
     state = store.load()
 
     sync = SupabaseSync(load_config())
-    sync.use_session(state)
+    _restore_session(sync, store, state)
     device_name = state.device_name or default_device_name()
     sync.ensure_windows_device(state, device_name)
     store.save(state)
@@ -109,8 +113,12 @@ def handle_pull(_: argparse.Namespace) -> None:
     state = store.load()
 
     sync = SupabaseSync(load_config())
-    sync.use_session(state)
+    _restore_session(sync, store, state)
+    store.save(state)
     item = sync.pull_latest_clipboard_text()
+    if item is None:
+        print("No synced text yet. Windows clipboard was not changed.")
+        return
     write_text(item.content)
 
     print(f"Pulled clipboard item: {item.id}")
@@ -128,6 +136,14 @@ def default_device_name() -> str:
     if node:
         return f"{node} Windows"
     return "Windows Device"
+
+
+def _restore_session(sync: SupabaseSync, store: StateStore, state: AppState) -> None:
+    try:
+        sync.use_session(state)
+    except AuthenticationRequiredError:
+        store.clear_session()
+        raise
 
 
 if __name__ == "__main__":

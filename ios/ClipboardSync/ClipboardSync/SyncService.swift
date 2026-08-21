@@ -1,5 +1,47 @@
 import Foundation
 
+enum SyncOperation: Equatable, Sendable {
+    case signIn
+    case signOut
+    case registerDevice
+    case pushText
+    case pullText
+
+    var description: String {
+        switch self {
+        case .signIn: "sign in"
+        case .signOut: "sign out"
+        case .registerDevice: "register this device"
+        case .pushText: "push text"
+        case .pullText: "pull text"
+        }
+    }
+}
+
+enum SyncServiceError: LocalizedError, Equatable, Sendable {
+    case offline
+    case invalidCredentials
+    case authenticationRequired
+    case operationFailed(SyncOperation)
+
+    var requiresAuthentication: Bool {
+        self == .authenticationRequired
+    }
+
+    var errorDescription: String? {
+        switch self {
+        case .offline:
+            "You appear to be offline. Check your connection and try again."
+        case .invalidCredentials:
+            "Email or password is incorrect."
+        case .authenticationRequired:
+            "Your session expired. Sign in again."
+        case .operationFailed(let operation):
+            "Could not \(operation.description). Please try again."
+        }
+    }
+}
+
 struct AppSession: Equatable, Sendable {
     let userID: UUID
     let email: String

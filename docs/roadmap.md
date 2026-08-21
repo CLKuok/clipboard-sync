@@ -93,6 +93,8 @@ Verification completed:
 
 ## Milestone 5: MVP Hardening
 
+Status: implementation complete; live network verification pending.
+
 - Handle offline state.
 - Handle authentication failures.
 - Handle empty clipboard text.
@@ -106,6 +108,18 @@ Acceptance criteria:
 - Public/university Wi-Fi usage has been tested where possible.
 - Setup docs are complete enough for a beginner to recreate the project.
 - No secrets, tokens, or real clipboard contents are committed.
+
+Automated verification completed:
+
+- Windows configuration, authentication, offline, empty-text, empty-pull, sync-failure, device, and push/pull tests pass.
+- The iOS app builds and its authentication, offline, empty-state, device, and push/pull tests pass on iPhone 17 Pro/iOS 26.5 simulator.
+- No schema or authentication-model change was required.
+
+Remaining verification:
+
+- Confirm friendly offline feedback on a physical iPhone.
+- Confirm friendly offline feedback from the Windows CLI.
+- Test one synthetic sync on public/university Wi-Fi where available, or record that such a network was unavailable.
 
 ## Milestone 6: Future Improvements
 

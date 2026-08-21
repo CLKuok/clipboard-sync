@@ -108,6 +108,7 @@ name = "clipboard-sync-windows"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "pyperclip" },
     { name = "python-dotenv" },
     { name = "supabase" },
@@ -120,6 +121,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "pyperclip", specifier = ">=1.9.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "supabase", specifier = ">=2.10.0" },

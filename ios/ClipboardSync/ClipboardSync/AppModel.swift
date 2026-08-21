@@ -84,8 +84,10 @@ final class AppModel: ObservableObject {
             try await service.signOut()
             applySignedOutState()
         } catch {
-            operation = nil
-            errorMessage = userMessage(for: error)
+            if !applyAuthenticationFailure(error) {
+                operation = nil
+                errorMessage = userMessage(for: error)
+            }
         }
     }
 
@@ -111,7 +113,9 @@ final class AppModel: ObservableObject {
             )
             statusMessage = "Text pushed successfully."
         } catch {
-            errorMessage = userMessage(for: error)
+            if !applyAuthenticationFailure(error) {
+                errorMessage = userMessage(for: error)
+            }
         }
 
         operation = nil
@@ -131,7 +135,9 @@ final class AppModel: ObservableObject {
                 statusMessage = "No synced text yet."
             }
         } catch {
-            errorMessage = userMessage(for: error)
+            if !applyAuthenticationFailure(error) {
+                errorMessage = userMessage(for: error)
+            }
         }
 
         operation = nil
@@ -174,7 +180,9 @@ final class AppModel: ObservableObject {
             registeredDeviceID = try await service.upsertDevice(deviceRequest())
             statusMessage = "Device ready."
         } catch {
-            errorMessage = "Signed in, but device registration failed: \(userMessage(for: error))"
+            if !applyAuthenticationFailure(error) {
+                errorMessage = "Signed in, but device registration failed: \(userMessage(for: error))"
+            }
         }
 
         establishingUserID = nil
@@ -207,5 +215,17 @@ final class AppModel: ObservableObject {
     private func userMessage(for error: Error) -> String {
         let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         return message.isEmpty ? "Something went wrong. Please try again." : message
+    }
+
+    @discardableResult
+    private func applyAuthenticationFailure(_ error: Error) -> Bool {
+        guard let syncError = error as? SyncServiceError,
+              syncError.requiresAuthentication else {
+            return false
+        }
+
+        applySignedOutState()
+        errorMessage = userMessage(for: syncError)
+        return true
     }
 }

@@ -14,6 +14,8 @@ The app can:
 
 It does not monitor or change the iPhone clipboard automatically.
 
+Milestone 5 adds friendly offline and expired-session feedback. Retryable failures keep entered text so the same manual action can be tried again after reconnecting.
+
 ## First-time configuration
 
 The project contains safe placeholder values so it builds without secrets. A real Supabase connection uses an ignored local file.
@@ -63,7 +65,7 @@ xcodebuild -project ios/ClipboardSync/ClipboardSync.xcodeproj \
   test
 ```
 
-The 17 tests use a mocked sync service. They require no Supabase credentials and do not contact the live project.
+The 21 tests use a mocked sync service. They require no Supabase credentials and do not contact the live project. They cover offline mapping, expired authentication, safe backend failures, existing empty states, and the Milestone 4 behavior.
 
 ## Live acceptance checklist
 
@@ -95,4 +97,6 @@ App Store distribution is outside this milestone.
 - 2026-07-24: blank SwiftUI baseline built and its generated test passed on iPhone 17 Pro/iOS 26.5 simulator.
 - 2026-07-24: Supabase-enabled app built, launched to its safe missing-configuration state, and all 17 mocked tests passed on the same simulator.
 - 2026-08-21: live Supabase authentication, readable authentication errors, session restoration, logout, iOS device-row reuse, empty states, and Windows↔iPhone manual text sync passed using a development Auth user.
-- Optional follow-up checks: live deleted-device recovery and deployment to a physical iPhone.
+- 2026-08-21: Milestone 5 hardening built successfully and all 21 automated iOS tests passed on iPhone 17 Pro/iOS 26.5 simulator.
+- Pending Milestone 5 checks: physical-iPhone offline feedback and public/university Wi-Fi where available.
+- Optional follow-up check: live deleted-device recovery.

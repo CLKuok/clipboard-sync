@@ -1,9 +1,19 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import httpx
+import pytest
+from supabase_auth.errors import AuthApiError
+
 from clipboard_sync.config import AppConfig
 from clipboard_sync.state import AppState
-from clipboard_sync.supabase_client import SupabaseSync, _clipboard_item_from_row
+from clipboard_sync.supabase_client import (
+    AuthenticationRequiredError,
+    SupabaseSync,
+    SyncError,
+    SyncErrorKind,
+    _clipboard_item_from_row,
+)
 
 
 def _make_sync(monkeypatch):
@@ -133,3 +143,59 @@ def test_pull_latest_clipboard_text_fetches_newest_item(monkeypatch):
     order_query.limit.assert_called_once_with(1)
     assert item.id == "latest-item-id"
     assert item.content == "latest text"
+
+
+def test_pull_latest_clipboard_text_returns_none_when_empty(monkeypatch):
+    sync, client = _make_sync(monkeypatch)
+    client.table.return_value.select.return_value.order.return_value.limit.return_value.execute.return_value = SimpleNamespace(data=[])
+
+    assert sync.pull_latest_clipboard_text() is None
+
+
+def test_push_rejects_whitespace_only_text(monkeypatch):
+    sync, client = _make_sync(monkeypatch)
+    state = AppState(device_id="device-id")
+
+    with pytest.raises(SyncError, match="Clipboard is empty"):
+        sync.push_clipboard_text(state, "  \n\t  ")
+
+    client.table.assert_not_called()
+
+
+def test_sign_in_maps_invalid_credentials(monkeypatch):
+    sync, client = _make_sync(monkeypatch)
+    client.auth.sign_in_with_password.side_effect = AuthApiError(
+        "Invalid login credentials", 400, "invalid_credentials"
+    )
+
+    with pytest.raises(SyncError) as caught:
+        sync.sign_in("person@example.com", "wrong")
+
+    assert caught.value.kind is SyncErrorKind.INVALID_CREDENTIALS
+    assert str(caught.value) == "Email or password is incorrect."
+
+
+def test_pull_maps_transport_failure_to_offline_message(monkeypatch):
+    sync, client = _make_sync(monkeypatch)
+    request = httpx.Request("GET", "https://example.supabase.co")
+    client.table.return_value.select.return_value.order.return_value.limit.return_value.execute.side_effect = httpx.ConnectError(
+        "synthetic network failure", request=request
+    )
+
+    with pytest.raises(SyncError) as caught:
+        sync.pull_latest_clipboard_text()
+
+    assert caught.value.kind is SyncErrorKind.OFFLINE
+    assert "offline" in str(caught.value).lower()
+    assert "synthetic" not in str(caught.value)
+
+
+def test_use_session_maps_expired_session(monkeypatch):
+    sync, client = _make_sync(monkeypatch)
+    client.auth.set_session.side_effect = AuthApiError(
+        "JWT expired", 401, "invalid_jwt"
+    )
+    state = AppState(access_token="access", refresh_token="refresh", user_id="user")
+
+    with pytest.raises(AuthenticationRequiredError, match="session expired"):
+        sync.use_session(state)

@@ -282,6 +282,63 @@ struct ClipboardSyncTests {
         #expect(!model.isBusy)
     }
 
+    @Test("Offline push preserves draft and displays actionable feedback")
+    @MainActor
+    func offlinePush() async {
+        let service = MockService(session: session)
+        let model = makeModel(service: service)
+        model.start()
+        service.emit(.initialSession(session))
+        await waitUntil { model.registeredDeviceID != nil }
+        service.pushError = SyncServiceError.offline
+        model.draftText = "retry this later"
+
+        await model.pushText()
+
+        #expect(model.draftText == "retry this later")
+        #expect(model.errorMessage == "You appear to be offline. Check your connection and try again.")
+        #expect(model.screen == .signedIn(session))
+    }
+
+    @Test("Expired session during pull returns to sign-in")
+    @MainActor
+    func expiredSessionDuringPull() async {
+        let service = MockService(session: session)
+        let model = makeModel(service: service)
+        model.start()
+        service.emit(.initialSession(session))
+        await waitUntil { model.registeredDeviceID != nil }
+        service.pullError = SyncServiceError.authenticationRequired
+
+        await model.pullLatest()
+
+        #expect(model.screen == .signedOut)
+        #expect(model.errorMessage == "Your session expired. Sign in again.")
+        #expect(model.registeredDeviceID == nil)
+    }
+
+    @Test("Offline URL error maps to a safe message")
+    func offlineErrorMapping() {
+        let result = SupabaseSyncService.mapError(
+            URLError(.notConnectedToInternet),
+            operation: .pullText
+        )
+
+        #expect(result == .offline)
+        #expect(result.localizedDescription.contains("offline"))
+    }
+
+    @Test("Unexpected backend details are not shown to the user")
+    func genericErrorMapping() {
+        let result = SupabaseSyncService.mapError(
+            TestFailure(message: "synthetic backend internals"),
+            operation: .pushText
+        )
+
+        #expect(result == .operationFailed(.pushText))
+        #expect(!result.localizedDescription.contains("synthetic"))
+    }
+
     @MainActor
     private func makeModel(
         service: MockService,
