@@ -122,7 +122,7 @@ Live verification completed:
 
 ## Milestone 6: Desktop and App Presentation
 
-Status: implementation complete; iOS build and cross-platform visual verification pending.
+Status: complete; accepted with follow-up verification explicitly deferred.
 
 - Add a simple Windows desktop interface while keeping the working CLI available.
 - Reuse the hardened authentication, device registration, and manual push/pull services.
@@ -146,7 +146,9 @@ Implementation completed:
 - The iPhone app keeps its editable push text and selectable pulled text while using the same presentation hierarchy.
 - All 34 Windows automated tests pass, and a Windows GUI smoke check confirms both screens render with the expected controls and window icon.
 
-Remaining acceptance verification:
+Acceptance decision:
 
-- Build and run the refreshed iPhone app and its mocked tests in Xcode.
-- Visually compare both clients and perform one synthetic sync in each direction before changing this milestone to complete.
+- Milestone 6 was accepted and closed by the project owner on 2026-08-22 so Milestone 7 can begin.
+- The refreshed iPhone build and mocked tests still need to be run in Xcode because Xcode is unavailable in the Windows development environment.
+- A final side-by-side visual comparison and one synthetic text sync in each direction remain explicitly deferred, non-blocking follow-up checks.
+- If a deferred check reveals a presentation regression, fix it without expanding Milestone 7's photo/file scope.
