@@ -8,7 +8,7 @@ The MVP is intentionally small: text-only clipboard sync, manual push/pull, secu
 
 Milestones 1–5 are complete. The Supabase foundation, Windows Python CLI, iPhone SwiftUI client, and MVP hardening have been implemented and tested. Live verification covers email/password authentication, session restoration, reusable device registration, manual text sync in both directions, and understandable offline behavior on Windows and iPhone.
 
-Milestone 6 improvements are beginning with a Windows desktop interface and iOS app icon. Public/university Wi-Fi verification remains a non-blocking follow-up when a suitable network is available.
+Milestone 6 presentation work now gives the Windows and iPhone clients a shared icon-led theme, matching Push/Pull hierarchy, and consistent inline feedback. The Windows implementation and automated tests are complete; final iOS build and cross-platform visual verification remain before milestone acceptance. Public/university Wi-Fi verification remains a non-blocking follow-up when a suitable network is available.
 
 ## Getting Started
 

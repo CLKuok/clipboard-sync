@@ -185,7 +185,45 @@ struct ClipboardSyncTests {
 
         #expect(service.deviceRequests.isEmpty)
         #expect(service.pushRequests.isEmpty)
-        #expect(model.errorMessage == "Enter or paste some text before pushing.")
+        #expect(model.errorMessage == "Enter text or copy some text to the clipboard before pushing.")
+    }
+
+    @Test("Empty draft reads and pushes text from the iPhone clipboard")
+    @MainActor
+    func emptyDraftUsesClipboardText() async {
+        let service = MockService(session: session)
+        let model = makeModel(service: service, clipboardText: "  clipboard spacing  ")
+
+        await model.pushText()
+
+        #expect(service.pushRequests.count == 1)
+        #expect(service.pushRequests[0].content == "  clipboard spacing  ")
+        #expect(model.draftText == "  clipboard spacing  ")
+        #expect(model.statusMessage == "Text pushed successfully.")
+    }
+
+    @Test("Entered text takes priority without reading the clipboard")
+    @MainActor
+    func enteredTextDoesNotReadClipboard() async {
+        let service = MockService(session: session)
+        var clipboardWasRead = false
+        let model = AppModel(
+            service: service,
+            identityStore: MemoryIdentityStore(value: "stable-key"),
+            deviceName: "Test iPhone",
+            clipboardTextProvider: {
+                clipboardWasRead = true
+                return "clipboard text"
+            }
+        )
+        model.draftText = "entered text"
+
+        await model.pushText()
+
+        #expect(!clipboardWasRead)
+        #expect(service.pushRequests.count == 1)
+        #expect(service.pushRequests[0].content == "entered text")
+        #expect(model.draftText == "entered text")
     }
 
     @Test("Push preserves valid text and sends text/plain")
@@ -343,9 +381,15 @@ struct ClipboardSyncTests {
     private func makeModel(
         service: MockService,
         identity: MemoryIdentityStore = MemoryIdentityStore(value: "stable-key"),
-        deviceName: String = "Test iPhone"
+        deviceName: String = "Test iPhone",
+        clipboardText: String? = nil
     ) -> AppModel {
-        AppModel(service: service, identityStore: identity, deviceName: deviceName)
+        AppModel(
+            service: service,
+            identityStore: identity,
+            deviceName: deviceName,
+            clipboardTextProvider: { clipboardText }
+        )
     }
 
     @MainActor

@@ -8,15 +8,17 @@ The app can:
 - sign in and log out;
 - keep one stable `client_device_key` for this app installation;
 - register or recover its iOS device row;
-- push text entered or pasted into the app;
+- push text entered or pasted into the app, or read the iPhone clipboard after an explicit push when the text box is empty;
 - pull and display the latest synced text;
 - show loading, empty, success, configuration, and error states.
 
-It does not monitor or change the iPhone clipboard automatically.
+It does not monitor or change the iPhone clipboard automatically. Clipboard text is read only when the user selects **Push Text** with an empty text box; iOS may show its standard paste permission prompt.
+
+While editing text, tapping outside a text field or dragging the screen dismisses the keyboard without changing the draft.
 
 Milestone 5 adds friendly offline and expired-session feedback. Retryable failures keep entered text so the same manual action can be tried again after reconnecting.
 
-Milestone 6 adds an original Clipboard Sync app icon through the Xcode asset catalog. iOS applies the platform's icon mask automatically.
+Milestone 6 adds an original Clipboard Sync app icon and a coordinated blue/cyan presentation shared with Windows. The refreshed interface uses the same branded header, account context, grouped Push/Pull hierarchy, and compact progress/success/error feedback while retaining native SwiftUI controls. iOS applies the platform's icon mask automatically.
 
 ## First-time configuration
 
@@ -67,7 +69,7 @@ xcodebuild -project ios/ClipboardSync/ClipboardSync.xcodeproj \
   test
 ```
 
-The 21 tests use a mocked sync service. They require no Supabase credentials and do not contact the live project. They cover offline mapping, expired authentication, safe backend failures, existing empty states, and the Milestone 4 behavior.
+The 23 tests use a mocked sync service. They require no Supabase credentials and do not contact the live project. They cover entered-text priority, clipboard fallback, offline mapping, expired authentication, safe backend failures, existing empty states, and the Milestone 4 behavior.
 
 ## Live acceptance checklist
 
@@ -101,5 +103,6 @@ App Store distribution is outside this milestone.
 - 2026-08-21: live Supabase authentication, readable authentication errors, session restoration, logout, iOS device-row reuse, empty states, and Windows↔iPhone manual text sync passed using a development Auth user.
 - 2026-08-21: Milestone 5 hardening built successfully and all 21 automated iOS tests passed on iPhone 17 Pro/iOS 26.5 simulator.
 - 2026-08-21: friendly offline feedback passed on a physical iPhone.
+- 2026-08-21: the unified Milestone 6 SwiftUI presentation and reusable runtime brand mark were implemented; the post-refresh Xcode build, tests, and visual comparison remain to be run on macOS.
 - Public/university Wi-Fi remains an explicitly deferred, non-blocking follow-up.
 - Optional follow-up check: live deleted-device recovery.

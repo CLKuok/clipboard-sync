@@ -33,17 +33,20 @@ final class AppModel: ObservableObject {
     private let service: ClipboardSyncServicing
     private let identityStore: DeviceIdentityStoring
     private let deviceName: String
+    private let clipboardTextProvider: () -> String?
     private var authTask: Task<Void, Never>?
     private var establishingUserID: UUID?
 
     init(
         service: ClipboardSyncServicing,
         identityStore: DeviceIdentityStoring,
-        deviceName: String
+        deviceName: String,
+        clipboardTextProvider: @escaping () -> String? = { nil }
     ) {
         self.service = service
         self.identityStore = identityStore
         self.deviceName = deviceName
+        self.clipboardTextProvider = clipboardTextProvider
     }
 
     func start() {
@@ -93,10 +96,18 @@ final class AppModel: ObservableObject {
 
     func pushText() async {
         guard !isBusy else { return }
-        guard !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "Enter or paste some text before pushing."
-            statusMessage = nil
-            return
+        let content: String
+        if draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            guard let clipboardText = clipboardTextProvider(),
+                  !clipboardText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                errorMessage = "Enter text or copy some text to the clipboard before pushing."
+                statusMessage = nil
+                return
+            }
+            draftText = clipboardText
+            content = clipboardText
+        } else {
+            content = draftText
         }
 
         clearFeedback()
@@ -108,7 +119,7 @@ final class AppModel: ObservableObject {
             _ = try await service.pushText(
                 ClipboardPushRequest(
                     sourceDeviceID: refreshedDeviceID,
-                    content: draftText
+                    content: content
                 )
             )
             statusMessage = "Text pushed successfully."

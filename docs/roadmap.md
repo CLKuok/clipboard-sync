@@ -122,7 +122,7 @@ Live verification completed:
 
 ## Milestone 6: Desktop and App Presentation
 
-Status: in progress.
+Status: implementation complete; iOS build and cross-platform visual verification pending.
 
 - Add a simple Windows desktop interface while keeping the working CLI available.
 - Reuse the hardened authentication, device registration, and manual push/pull services.
@@ -138,3 +138,15 @@ Acceptance criteria:
 - No automatic clipboard monitoring, realtime subscriptions, history browser, schema change, or binary content is added.
 
 Later improvements such as automation, realtime updates, richer history, or optional local sync remain outside this milestone.
+
+Implementation completed:
+
+- Windows and iPhone now use one icon-led blue/cyan presentation with matching headers, grouped Push/Pull sections, account context, and inline progress/success/error feedback.
+- Both GUIs accept manually entered or pasted text and fall back to reading text from the system clipboard only after an explicit push with an empty box; the unchanged Windows CLI continues to push the current clipboard through the same sync services.
+- The iPhone app keeps its editable push text and selectable pulled text while using the same presentation hierarchy.
+- All 34 Windows automated tests pass, and a Windows GUI smoke check confirms both screens render with the expected controls and window icon.
+
+Remaining acceptance verification:
+
+- Build and run the refreshed iPhone app and its mocked tests in Xcode.
+- Visually compare both clients and perform one synthetic sync in each direction before changing this milestone to complete.
