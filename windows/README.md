@@ -1,6 +1,6 @@
 # Windows App
 
-This folder contains the completed Milestone 3 Python Windows CLI for manual Clipboard Sync. It has also been verified against the Milestone 4 iPhone client.
+This folder contains the Python Windows clients for manual Clipboard Sync. Milestone 6 adds a small desktop interface while retaining the completed and verified command-line interface.
 
 MVP requirements:
 
@@ -34,7 +34,19 @@ SUPABASE_ANON_KEY=your-publishable-or-anon-key
 
 Use the project URL and publishable or legacy anon key from the same Supabase project as the iPhone app. Do not use or store a secret or service-role key in this app.
 
-## Usage
+## Desktop app
+
+After setup, launch the graphical Windows app:
+
+```powershell
+uv run clipboard-sync-windows-gui
+```
+
+Sign in with the same Supabase Auth user as the iPhone app. The window can push the current Windows clipboard, pull the latest synced text, restore the saved session after reopening, and log out. Expected offline and authentication failures appear in the window rather than as tracebacks.
+
+This is the first Milestone 6 desktop version. It runs through `uv`; packaging it as a standalone installer is not part of this initial UI slice.
+
+## Command-line usage
 
 Login:
 
@@ -89,7 +101,7 @@ From the `windows` folder:
 uv run pytest -q
 ```
 
-The 24 automated tests do not access the live Supabase project or Windows clipboard. They cover configuration safety, device reuse, session hardening, empty states, failure feedback, and push/pull behavior.
+The 31 automated tests do not access the live Supabase project or Windows clipboard. They cover configuration safety, device reuse, session hardening, empty states, failure feedback, desktop-controller behavior, and push/pull behavior.
 
 ## Manual Test Result
 
@@ -102,4 +114,4 @@ Confirmed commands:
 - `push`: read Windows clipboard text and inserted it into Supabase.
 - `pull`: fetched the latest clipboard text from Supabase and copied it to the Windows clipboard.
 
-Milestone 5 offline and public/university Wi-Fi live checks are pending.
+Milestone 5 offline feedback passed live Windows testing on 2026-08-21. Public/university Wi-Fi remains an explicitly deferred, non-blocking follow-up.

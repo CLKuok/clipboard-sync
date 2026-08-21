@@ -93,7 +93,7 @@ Verification completed:
 
 ## Milestone 5: MVP Hardening
 
-Status: implementation complete; live network verification pending.
+Status: complete.
 
 - Handle offline state.
 - Handle authentication failures.
@@ -115,20 +115,26 @@ Automated verification completed:
 - The iOS app builds and its authentication, offline, empty-state, device, and push/pull tests pass on iPhone 17 Pro/iOS 26.5 simulator.
 - No schema or authentication-model change was required.
 
-Remaining verification:
+Live verification completed:
 
-- Confirm friendly offline feedback on a physical iPhone.
-- Confirm friendly offline feedback from the Windows CLI.
-- Test one synthetic sync on public/university Wi-Fi where available, or record that such a network was unavailable.
+- Friendly offline feedback was confirmed on a physical iPhone and the Windows CLI on 2026-08-21.
+- Public/university Wi-Fi testing is explicitly deferred until a suitable network is available; this is non-blocking under the "where possible" acceptance criterion.
 
-## Milestone 6: Future Improvements
+## Milestone 6: Desktop and App Presentation
 
-- Clipboard automation.
-- Supabase realtime subscriptions.
-- Better clipboard history UI.
-- Optional local sync can be reconsidered later, but it is not part of the first simple MVP.
+Status: in progress.
+
+- Add a simple Windows desktop interface while keeping the working CLI available.
+- Reuse the hardened authentication, device registration, and manual push/pull services.
+- Add an original iOS app icon and include it in the Xcode asset catalog.
+- Keep synchronization manual and text-only during this UI improvement.
 
 Acceptance criteria:
 
-- Future improvements are only started after the manual text-only MVP works reliably.
-- Automation or realtime changes do not break the manual sync path.
+- The Windows desktop interface can sign in, restore a session, push the current clipboard, pull the latest text, log out, and show useful progress/error states.
+- The Windows CLI remains available and compatible with the iPhone client.
+- The iPhone app builds with its own app icon.
+- Existing Windows and iOS automated checks continue to pass.
+- No automatic clipboard monitoring, realtime subscriptions, history browser, schema change, or binary content is added.
+
+Later improvements such as automation, realtime updates, richer history, or optional local sync remain outside this milestone.

@@ -6,15 +6,15 @@ The MVP is intentionally small: text-only clipboard sync, manual push/pull, secu
 
 ## Current Status
 
-Milestones 1–4 are complete. The Supabase foundation, Windows Python CLI, and iPhone SwiftUI client have been implemented and tested. Live verification covers email/password authentication, session restoration, reusable device registration, and manual text sync in both directions between Windows and iPhone.
+Milestones 1–5 are complete. The Supabase foundation, Windows Python CLI, iPhone SwiftUI client, and MVP hardening have been implemented and tested. Live verification covers email/password authentication, session restoration, reusable device registration, manual text sync in both directions, and understandable offline behavior on Windows and iPhone.
 
-Milestone 5 hardening is implemented and awaiting its short offline/public-network live check. Both clients now provide safe feedback for offline, authentication, empty-text, and sync failures. See [docs/roadmap.md](docs/roadmap.md) for the remaining acceptance check.
+Milestone 6 improvements are beginning with a Windows desktop interface and iOS app icon. Public/university Wi-Fi verification remains a non-blocking follow-up when a suitable network is available.
 
 ## Getting Started
 
 1. Create and configure the Supabase project using [docs/supabase-setup.md](docs/supabase-setup.md).
 2. Apply [supabase/migrations/0001_initial_schema.sql](supabase/migrations/0001_initial_schema.sql) and verify RLS with [docs/supabase-verification.md](docs/supabase-verification.md).
-3. Set up the [Windows CLI](windows/README.md) and/or [iPhone app](ios/README.md) with the same Supabase project and Auth user.
+3. Set up the [Windows app or CLI](windows/README.md) and/or [iPhone app](ios/README.md) with the same Supabase project and Auth user.
 
 Only use a publishable or legacy anon key in the clients. Never use a secret or service-role key.
 

@@ -16,6 +16,8 @@ It does not monitor or change the iPhone clipboard automatically.
 
 Milestone 5 adds friendly offline and expired-session feedback. Retryable failures keep entered text so the same manual action can be tried again after reconnecting.
 
+Milestone 6 adds an original Clipboard Sync app icon through the Xcode asset catalog. iOS applies the platform's icon mask automatically.
+
 ## First-time configuration
 
 The project contains safe placeholder values so it builds without secrets. A real Supabase connection uses an ignored local file.
@@ -98,5 +100,6 @@ App Store distribution is outside this milestone.
 - 2026-07-24: Supabase-enabled app built, launched to its safe missing-configuration state, and all 17 mocked tests passed on the same simulator.
 - 2026-08-21: live Supabase authentication, readable authentication errors, session restoration, logout, iOS device-row reuse, empty states, and Windows↔iPhone manual text sync passed using a development Auth user.
 - 2026-08-21: Milestone 5 hardening built successfully and all 21 automated iOS tests passed on iPhone 17 Pro/iOS 26.5 simulator.
-- Pending Milestone 5 checks: physical-iPhone offline feedback and public/university Wi-Fi where available.
+- 2026-08-21: friendly offline feedback passed on a physical iPhone.
+- Public/university Wi-Fi remains an explicitly deferred, non-blocking follow-up.
 - Optional follow-up check: live deleted-device recovery.
