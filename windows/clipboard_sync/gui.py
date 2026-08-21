@@ -19,9 +19,10 @@ from clipboard_sync.supabase_client import (
 )
 
 
-COLORS = {
+LIGHT_COLORS = {
     "background": "#f3f7fc",
     "surface": "#ffffff",
+    "field": "#f1f5fb",
     "surface_border": "#dce6f2",
     "primary": "#2563eb",
     "primary_active": "#1d4ed8",
@@ -37,7 +38,45 @@ COLORS = {
     "disabled": "#94a3b8",
 }
 
+DARK_COLORS = {
+    "background": "#0b1220",
+    "surface": "#111c2e",
+    "field": "#1c293d",
+    "surface_border": "#263852",
+    "primary": "#60a5fa",
+    "primary_active": "#3b82f6",
+    "accent": "#22d3ee",
+    "text": "#f8fafc",
+    "muted": "#94a3b8",
+    "success": "#4ade80",
+    "success_background": "#102b23",
+    "error": "#f87171",
+    "error_background": "#351a20",
+    "info": "#60a5fa",
+    "info_background": "#122640",
+    "disabled": "#64748b",
+}
+
+# Keep one shared mapping so existing widgets and tests can continue importing COLORS.
+COLORS = LIGHT_COLORS.copy()
+
 FeedbackKind = Literal["info", "success", "error"]
+
+
+def system_uses_dark_mode() -> bool:
+    """Return the Windows app-theme preference, defaulting safely to light mode."""
+
+    if platform.system() != "Windows":
+        return False
+    try:
+        import winreg
+
+        path = r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as key:
+            apps_use_light_theme, _value_type = winreg.QueryValueEx(key, "AppsUseLightTheme")
+        return int(apps_use_light_theme) == 0
+    except (OSError, TypeError, ValueError):
+        return False
 
 
 class RoundedPanel(tk.Canvas):
@@ -47,11 +86,14 @@ class RoundedPanel(tk.Canvas):
         self,
         parent: tk.Misc,
         *,
-        fill: str = COLORS["surface"],
-        background: str = COLORS["background"],
+        fill: str | None = None,
+        background: str | None = None,
         radius: int = 22,
         padding: tuple[int, int] = (22, 18),
+        expand_y: bool = False,
     ) -> None:
+        fill = fill or COLORS["surface"]
+        background = background or COLORS["background"]
         super().__init__(
             parent,
             background=background,
@@ -62,6 +104,7 @@ class RoundedPanel(tk.Canvas):
         self.fill = fill
         self.radius = radius
         self.padding_x, self.padding_y = padding
+        self.expand_y = expand_y
         self.content = tk.Frame(self, background=fill, borderwidth=0)
         self._content_window = self.create_window(
             self.padding_x,
@@ -88,7 +131,10 @@ class RoundedPanel(tk.Canvas):
 
     def _redraw(self, event: tk.Event[tk.Misc]) -> None:
         content_width = max(1, event.width - (self.padding_x * 2))
-        self.itemconfigure(self._content_window, width=content_width)
+        content_options = {"width": content_width}
+        if self.expand_y:
+            content_options["height"] = max(1, event.height - (self.padding_y * 2))
+        self.itemconfigure(self._content_window, **content_options)
         self.coords(self._content_window, self.padding_x, self.padding_y)
         self._draw_shape(event.width, event.height)
 
@@ -127,17 +173,25 @@ class ScrollableFrame(ttk.Frame):
         )
         self.inner = ttk.Frame(self.canvas, style="App.TFrame")
         self._window = self.canvas.create_window((0, 0), window=self.inner, anchor="nw")
+        self._size_sync_pending = False
         self.canvas.pack(fill="both", expand=True)
-        self.inner.bind("<Configure>", self._update_scroll_region)
-        self.canvas.bind("<Configure>", self._update_width)
+        self.inner.bind("<Configure>", self._schedule_size_sync)
+        self.canvas.bind("<Configure>", self._schedule_size_sync)
         self.canvas.bind("<Enter>", lambda _event: self.canvas.bind_all("<MouseWheel>", self._scroll))
         self.canvas.bind("<Leave>", lambda _event: self.canvas.unbind_all("<MouseWheel>"))
 
-    def _update_scroll_region(self, _event: tk.Event[tk.Misc]) -> None:
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    def _schedule_size_sync(self, _event: tk.Event[tk.Misc] | None = None) -> None:
+        if self._size_sync_pending:
+            return
+        self._size_sync_pending = True
+        self.after_idle(self._sync_inner_size)
 
-    def _update_width(self, event: tk.Event[tk.Misc]) -> None:
-        self.canvas.itemconfigure(self._window, width=event.width)
+    def _sync_inner_size(self) -> None:
+        self._size_sync_pending = False
+        width = max(1, self.canvas.winfo_width())
+        height = max(self.canvas.winfo_height(), self.inner.winfo_reqheight())
+        self.canvas.itemconfigure(self._window, width=width, height=height)
+        self.canvas.configure(scrollregion=(0, 0, width, height))
 
     def _scroll(self, event: tk.Event[tk.Misc]) -> None:
         if event.delta:
@@ -201,10 +255,11 @@ class DesktopController:
     def pull(self) -> ClipboardItem | None:
         sync = self._require_sync()
         self._use_saved_session()
-        item = sync.pull_latest_clipboard_text()
-        if item is not None:
-            self.clipboard_writer(item.content)
-        return item
+        return sync.pull_latest_clipboard_text()
+
+    def copy_to_clipboard(self, content: str) -> str:
+        self.clipboard_writer(content)
+        return content
 
     def logout(self) -> None:
         self.state = self.store.clear_session()
@@ -231,6 +286,9 @@ class ClipboardSyncWindow(tk.Tk):
 
     def __init__(self, controller: DesktopController | None = None) -> None:
         super().__init__()
+        self.dark_mode = system_uses_dark_mode()
+        COLORS.clear()
+        COLORS.update(DARK_COLORS if self.dark_mode else LIGHT_COLORS)
         self.controller = controller or DesktopController()
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="clipboard-sync")
         self.device_name = default_device_name()
@@ -239,22 +297,30 @@ class ClipboardSyncWindow(tk.Tk):
         self.account = tk.StringVar(value="Not signed in")
         self.feedback = tk.StringVar(value="Ready to sync.")
         self.feedback_icon = tk.StringVar(value="i")
+        self.feedback_kind: FeedbackKind = "info"
         self.last_pushed_text: str | None = None
         self.latest_pulled_text: str | None = None
         self.busy = False
+        self._fit_job: str | None = None
+        self._fit_when_mapped = False
+        self._theme_job: str | None = None
+        self._rounded_panels: list[RoundedPanel] = []
+        self._field_panels: list[RoundedPanel] = []
         self._app_icon: tk.PhotoImage | None = None
         self._brand_icon: tk.PhotoImage | None = None
 
         self.title("Clipboard Sync")
-        self.geometry("640x680")
-        self.minsize(560, 670)
+        self.geometry("540x785")
+        self.minsize(540, 630)
         self.configure(background=COLORS["background"])
         self.protocol("WM_DELETE_WINDOW", self._close)
         self.bind("<Return>", self._handle_return)
+        self.bind("<Map>", self._handle_window_map, add="+")
 
         self._load_branding()
         self._configure_style()
         self._build_ui()
+        self._theme_job = self.after(1500, self._check_system_theme)
 
         if self.controller.is_logged_in:
             self._show_session(self.controller.state.user_email or "Saved account")
@@ -300,7 +366,7 @@ class ClipboardSyncWindow(tk.Tk):
             "Subtitle.TLabel",
             background=COLORS["background"],
             foreground=COLORS["muted"],
-            font=("Segoe UI", 10),
+            font=("Segoe UI", 12),
         )
         style.configure(
             "PageSection.TLabel",
@@ -312,30 +378,38 @@ class ClipboardSyncWindow(tk.Tk):
             "Section.TLabel",
             background=COLORS["surface"],
             foreground=COLORS["text"],
-            font=("Segoe UI", 12, "bold"),
+            font=("Segoe UI", 13, "bold"),
         )
         style.configure(
             "Body.TLabel",
             background=COLORS["surface"],
             foreground=COLORS["text"],
-            font=("Segoe UI", 10),
+            font=("Segoe UI", 11),
         )
         style.configure(
             "Muted.TLabel",
             background=COLORS["surface"],
             foreground=COLORS["muted"],
-            font=("Segoe UI", 9),
+            font=("Segoe UI", 10),
         )
         style.configure(
             "Account.TLabel",
             background=COLORS["surface"],
             foreground=COLORS["text"],
-            font=("Segoe UI", 11, "bold"),
+            font=("Segoe UI", 12, "bold"),
+        )
+        style.configure(
+            "AccountCheck.TLabel",
+            background=COLORS["surface"],
+            foreground=COLORS["success"],
+            font=("Segoe UI Symbol", 14, "bold"),
         )
         style.configure(
             "App.TEntry",
             padding=(10, 9),
             fieldbackground=COLORS["surface"],
+            foreground=COLORS["text"],
+            insertcolor=COLORS["text"],
             bordercolor=COLORS["surface_border"],
             lightcolor=COLORS["surface_border"],
             darkcolor=COLORS["surface_border"],
@@ -353,8 +427,8 @@ class ClipboardSyncWindow(tk.Tk):
             borderwidth=0,
             focusthickness=2,
             focuscolor=COLORS["accent"],
-            font=("Segoe UI", 10, "bold"),
-            padding=(16, 11),
+            font=("Segoe UI", 11, "bold"),
+            padding=(16, 9),
         )
         style.map(
             "Primary.TButton",
@@ -375,6 +449,21 @@ class ClipboardSyncWindow(tk.Tk):
         style.map(
             "Secondary.TButton",
             background=[("active", COLORS["info_background"]), ("disabled", "#f8fafc")],
+            foreground=[("disabled", COLORS["disabled"])],
+        )
+        style.configure(
+            "Copy.TButton",
+            background=COLORS["info_background"],
+            foreground=COLORS["primary"],
+            borderwidth=0,
+            focusthickness=2,
+            focuscolor=COLORS["accent"],
+            font=("Segoe UI", 11, "bold"),
+            padding=(16, 9),
+        )
+        style.map(
+            "Copy.TButton",
+            background=[("active", COLORS["field"]), ("disabled", COLORS["field"])],
             foreground=[("disabled", COLORS["disabled"])],
         )
         style.configure(
@@ -406,6 +495,19 @@ class ClipboardSyncWindow(tk.Tk):
             foreground=[("disabled", COLORS["disabled"])],
         )
         style.configure(
+            "AppDanger.TButton",
+            background=COLORS["background"],
+            foreground=COLORS["error"],
+            borderwidth=0,
+            font=("Segoe UI", 11),
+            padding=(12, 7),
+        )
+        style.map(
+            "AppDanger.TButton",
+            background=[("active", COLORS["background"])],
+            foreground=[("disabled", COLORS["disabled"])],
+        )
+        style.configure(
             "App.Horizontal.TProgressbar",
             background=COLORS["accent"],
             troughcolor=COLORS["info_background"],
@@ -432,19 +534,82 @@ class ClipboardSyncWindow(tk.Tk):
             font=("Segoe UI", 9),
         )
 
+    def _check_system_theme(self) -> None:
+        self._theme_job = None
+        dark_mode = system_uses_dark_mode()
+        if dark_mode != self.dark_mode:
+            self.dark_mode = dark_mode
+            self._apply_theme()
+        self._theme_job = self.after(1500, self._check_system_theme)
+
+    def _apply_theme(self) -> None:
+        COLORS.clear()
+        COLORS.update(DARK_COLORS if self.dark_mode else LIGHT_COLORS)
+        self.configure(background=COLORS["background"])
+        self._configure_style()
+        self.scroller.canvas.configure(background=COLORS["background"])
+
+        for panel in self._rounded_panels:
+            if panel is self.feedback_panel:
+                panel.configure(background=COLORS["background"])
+            elif panel in self._field_panels:
+                panel.configure(background=COLORS["surface"])
+                panel.set_fill(COLORS["field"])
+            else:
+                panel.configure(background=COLORS["background"])
+                panel.set_fill(COLORS["surface"])
+
+        text_options = {
+            "background": COLORS["field"],
+            "foreground": COLORS["text"],
+            "insertbackground": COLORS["text"],
+            "selectbackground": COLORS["primary"],
+            "selectforeground": "#ffffff",
+        }
+        self.push_input.configure(**text_options)
+        display_options = text_options | {
+            "foreground": COLORS["text"] if self.latest_pulled_text is not None else COLORS["muted"]
+        }
+        self.pulled_display.configure(**display_options)
+        self._set_feedback(self.feedback.get(), kind=self.feedback_kind)
+        self._set_native_title_bar()
+
+    def _set_native_title_bar(self) -> None:
+        """Ask supported Windows versions to match the app's current theme."""
+
+        if platform.system() != "Windows" or not self.winfo_ismapped():
+            return
+        try:
+            import ctypes
+
+            window_handle = ctypes.windll.user32.GetParent(self.winfo_id())
+            enabled = ctypes.c_int(1 if self.dark_mode else 0)
+            for attribute in (20, 19):
+                result = ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                    window_handle,
+                    attribute,
+                    ctypes.byref(enabled),
+                    ctypes.sizeof(enabled),
+                )
+                if result == 0:
+                    break
+        except (AttributeError, OSError):
+            return
+
     def _build_ui(self) -> None:
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-        shell = ttk.Frame(self, style="App.TFrame", padding=(36, 28, 36, 28))
-        shell.grid(row=0, column=0, sticky="nsew")
-        shell.columnconfigure(0, weight=1)
-        shell.rowconfigure(1, weight=1)
+        self.shell = ttk.Frame(self, style="App.TFrame", padding=(30, 20, 30, 20))
+        self.shell.grid(row=0, column=0, sticky="nsew")
+        self.shell.columnconfigure(0, weight=1)
+        self.shell.rowconfigure(1, weight=1)
 
-        self._build_header(shell)
-        self.scroller = ScrollableFrame(shell)
+        self._build_header(self.shell)
+        self.scroller = ScrollableFrame(self.shell)
         self.scroller.grid(row=1, column=0, sticky="nsew")
         self.content = self.scroller.inner
         self.content.columnconfigure(0, weight=1)
+        self.content.rowconfigure(0, weight=1)
 
         self.login_card = self._card(self.content)
         self._build_login_card(self.login_card.content)
@@ -453,12 +618,13 @@ class ClipboardSyncWindow(tk.Tk):
         self._build_session_content(self.session_content)
 
         self.feedback_panel = RoundedPanel(
-            shell,
+            self.content,
             fill=COLORS["info_background"],
             radius=18,
-            padding=(14, 10),
+            padding=(14, 8),
         )
-        self.feedback_panel.grid(row=2, column=0, sticky="ew", pady=(16, 0))
+        self._rounded_panels.append(self.feedback_panel)
+        self.feedback_panel.grid(row=1, column=0, sticky="ew", pady=(12, 0))
         self.feedback_frame = self.feedback_panel.content
         self.feedback_frame.columnconfigure(1, weight=1)
         self.feedback_icon_label = tk.Label(
@@ -487,12 +653,22 @@ class ClipboardSyncWindow(tk.Tk):
             mode="indeterminate",
             style="App.Horizontal.TProgressbar",
         )
+        self.logout_button = ttk.Button(
+            self.content,
+            text="Log Out",
+            style="AppDanger.TButton",
+            command=self._logout,
+            takefocus=True,
+        )
+        self.logout_button.grid(row=2, column=0, sticky="ew", pady=(8, 2))
 
     def _build_header(self, parent: ttk.Frame) -> None:
-        header = ttk.Frame(parent, style="App.TFrame")
-        header.grid(row=0, column=0, sticky="ew", pady=(0, 20))
-        header.columnconfigure(0, weight=1)
-        ttk.Label(header, text="Clipboard Sync", style="Title.TLabel").grid(row=0, column=0, sticky="w")
+        self.header = ttk.Frame(parent, style="App.TFrame")
+        self.header.grid(row=0, column=0, sticky="ew", pady=(0, 14))
+        self.header.columnconfigure(0, weight=1)
+        ttk.Label(self.header, text="Clipboard Sync", style="Title.TLabel").grid(
+            row=0, column=0, sticky="w"
+        )
 
     def _card(
         self,
@@ -500,10 +676,32 @@ class ClipboardSyncWindow(tk.Tk):
         *,
         radius: int = 22,
         padding: tuple[int, int] = (22, 18),
+        expand_y: bool = False,
     ) -> RoundedPanel:
-        card = RoundedPanel(parent, radius=radius, padding=padding)
+        card = RoundedPanel(parent, radius=radius, padding=padding, expand_y=expand_y)
+        self._rounded_panels.append(card)
         card.content.columnconfigure(0, weight=1)
         return card
+
+    def _field(
+        self,
+        parent: tk.Misc,
+        *,
+        height_padding: int = 8,
+        expand_y: bool = False,
+    ) -> RoundedPanel:
+        field = RoundedPanel(
+            parent,
+            fill=COLORS["field"],
+            background=COLORS["surface"],
+            radius=14,
+            padding=(12, height_padding),
+            expand_y=expand_y,
+        )
+        self._rounded_panels.append(field)
+        self._field_panels.append(field)
+        field.content.columnconfigure(0, weight=1)
+        return field
 
     def _section_heading(self, parent: ttk.Frame, title: str, description: str, row: int = 0) -> int:
         ttk.Label(parent, text=title, style="Section.TLabel").grid(row=row, column=0, sticky="w")
@@ -528,71 +726,121 @@ class ClipboardSyncWindow(tk.Tk):
         self.sign_in_button.grid(row=row + 4, column=0, sticky="ew")
 
     def _build_session_content(self, parent: ttk.Frame) -> None:
-        ttk.Label(parent, text="Signed in", style="PageSection.TLabel").grid(
-            row=0, column=0, sticky="w", padx=6, pady=(0, 7)
-        )
-        account_panel = self._card(parent, radius=24, padding=(22, 15))
-        account_panel.grid(row=1, column=0, sticky="ew")
+        parent.rowconfigure(1, weight=1)
+        parent.rowconfigure(2, weight=1)
+
+        account_panel = self._card(parent, radius=22, padding=(18, 11))
+        account_panel.grid(row=0, column=0, sticky="ew")
         account_card = account_panel.content
+        account_card.columnconfigure(0, weight=1)
+        ttk.Label(account_card, text="Signed in", style="Muted.TLabel").grid(
+            row=0, column=0, sticky="w"
+        )
         ttk.Label(account_card, textvariable=self.account, style="Account.TLabel").grid(
-            row=0, column=0, sticky="w", pady=(0, 3)
+            row=1, column=0, sticky="w", pady=(1, 2)
         )
-        ttk.Label(account_card, text=self.device_name, style="Muted.TLabel").grid(row=1, column=0, sticky="w")
+        ttk.Label(account_card, text=self.device_name, style="Muted.TLabel").grid(
+            row=2, column=0, sticky="w"
+        )
+        ttk.Label(account_card, text="✓", style="AccountCheck.TLabel").grid(
+            row=0, column=1, rowspan=3, padx=(12, 0), sticky="e"
+        )
 
-        ttk.Label(parent, text="Text to push", style="PageSection.TLabel").grid(
-            row=2, column=0, sticky="w", padx=6, pady=(18, 7)
-        )
-        push_panel = self._card(parent)
-        push_panel.grid(row=3, column=0, sticky="ew")
+        push_panel = self._card(parent, padding=(18, 13), expand_y=True)
+        push_panel.grid(row=1, column=0, sticky="nsew", pady=(14, 0))
         push_card = push_panel.content
-        self.push_input = self._text_box(push_card, height=7)
-        self.push_input.grid(row=0, column=0, sticky="ew")
-        ttk.Separator(push_card).grid(row=1, column=0, sticky="ew", pady=(12, 4))
+        push_card.rowconfigure(1, weight=1, minsize=50)
+        ttk.Label(push_card, text="Push", style="Section.TLabel").grid(
+            row=0, column=0, sticky="w", pady=(0, 10)
+        )
+        push_field = self._field(push_card, expand_y=True)
+        push_field.grid(row=1, column=0, sticky="nsew")
+        push_field.content.rowconfigure(0, weight=1)
+        self.push_input = self._text_box(push_field.content, height=2)
+        self.push_input.grid(row=0, column=0, sticky="nsew")
         self.push_button = ttk.Button(
-            push_card, text="Push Text", style="Link.TButton", command=self._push, takefocus=True
-        )
-        self.push_button.grid(row=2, column=0, sticky="ew")
-
-        ttk.Label(parent, text="Latest synced text", style="PageSection.TLabel").grid(
-            row=4, column=0, sticky="w", padx=6, pady=(18, 7)
-        )
-        pull_panel = self._card(parent)
-        pull_panel.grid(row=5, column=0, sticky="ew")
-        pull_card = pull_panel.content
-        self.pulled_display = self._text_display(pull_card, height=4)
-        self.pulled_display.grid(row=0, column=0, sticky="ew")
-        ttk.Separator(pull_card).grid(row=1, column=0, sticky="ew", pady=(12, 4))
-        self.pull_button = ttk.Button(
-            pull_card, text="Pull Latest", style="Link.TButton", command=self._pull, takefocus=True
-        )
-        self.pull_button.grid(row=2, column=0, sticky="ew")
-
-        logout_panel = self._card(parent, radius=24, padding=(22, 8))
-        logout_panel.grid(row=6, column=0, sticky="ew", pady=(18, 4))
-        self.logout_button = ttk.Button(
-            logout_panel.content,
-            text="Log Out",
-            style="Danger.TButton",
-            command=self._logout,
+            push_card,
+            text="↑  Push Text",
+            style="Primary.TButton",
+            command=self._push,
             takefocus=True,
         )
-        self.logout_button.grid(row=0, column=0, sticky="ew")
+        self.push_button.grid(row=2, column=0, sticky="ew", pady=(10, 0))
+
+        pull_panel = self._card(parent, padding=(18, 13), expand_y=True)
+        pull_panel.grid(row=2, column=0, sticky="nsew", pady=(14, 0))
+        pull_card = pull_panel.content
+        pull_card.rowconfigure(1, weight=1, minsize=50)
+        ttk.Label(pull_card, text="Pull", style="Section.TLabel").grid(
+            row=0, column=0, sticky="w", pady=(0, 10)
+        )
+        pull_field = self._field(pull_card, expand_y=True)
+        pull_field.grid(row=1, column=0, sticky="nsew")
+        pull_field.content.rowconfigure(0, weight=1)
+        self.pulled_display = self._text_display(pull_field.content, height=2)
+        self.pulled_display.grid(row=0, column=0, sticky="nsew")
+        self.pull_button = ttk.Button(
+            pull_card,
+            text="↓  Pull Latest",
+            style="Primary.TButton",
+            command=self._pull,
+            takefocus=True,
+        )
+        self.pull_button.grid(row=2, column=0, sticky="ew", pady=(10, 0))
+        self.copy_button = ttk.Button(
+            pull_card,
+            text="⧉  Copy to Clipboard",
+            style="Copy.TButton",
+            command=self._copy_pulled_text,
+            takefocus=True,
+        )
+        self.copy_button.grid(row=3, column=0, sticky="ew", pady=(8, 0))
 
         self._set_text_display(self.pulled_display, None, "Nothing pulled yet.")
+
+    def _fit_signed_in_window(self) -> None:
+        """Size the window to show the complete signed-in layout when possible."""
+
+        if not self.winfo_ismapped():
+            self._fit_when_mapped = True
+            return
+        if self._fit_job is not None:
+            self.after_cancel(self._fit_job)
+        self._fit_job = self.after_idle(self._apply_signed_in_window_size)
+
+    def _handle_window_map(self, event: tk.Event[tk.Misc]) -> None:
+        if event.widget is not self:
+            return
+        self._set_native_title_bar()
+        if self._fit_when_mapped:
+            self._fit_when_mapped = False
+            self._fit_signed_in_window()
+
+    def _apply_signed_in_window_size(self) -> None:
+        self._fit_job = None
+        self.update_idletasks()
+        current_height = max(1, self.winfo_height())
+        viewport_height = max(1, self.scroller.canvas.winfo_height())
+        fixed_height = current_height - viewport_height
+        desired_height = max(current_height, fixed_height + self.session_content.winfo_reqheight())
+        available_height = max(560, self.winfo_screenheight() - 120)
+        width = max(540, self.winfo_width())
+        self.geometry(f"{width}x{min(desired_height, available_height)}")
 
     def _text_box(self, parent: tk.Frame, *, height: int) -> tk.Text:
         return tk.Text(
             parent,
             height=height,
             wrap="word",
-            background=COLORS["surface"],
+            background=COLORS["field"],
             foreground=COLORS["text"],
+            insertbackground=COLORS["text"],
             selectbackground=COLORS["primary"],
             selectforeground="#ffffff",
             borderwidth=0,
             highlightthickness=0,
             relief="flat",
-            font=("Segoe UI", 10),
+            font=("Segoe UI", 11),
             cursor="xterm",
             takefocus=True,
             padx=0,
@@ -645,6 +893,17 @@ class ClipboardSyncWindow(tk.Tk):
             self._pull_succeeded,
         )
 
+    def _copy_pulled_text(self) -> None:
+        if self.latest_pulled_text is None:
+            self._set_feedback("Pull some text before copying it.", kind="info")
+            return
+        text = self.latest_pulled_text
+        self._run(
+            "Copying text…",
+            lambda: self.controller.copy_to_clipboard(text),
+            self._copy_succeeded,
+        )
+
     def _push_succeeded(self, content: object) -> None:
         pushed_text = str(content)
         self.last_pushed_text = pushed_text
@@ -657,16 +916,19 @@ class ClipboardSyncWindow(tk.Tk):
         if item is None:
             self.latest_pulled_text = None
             self._set_text_display(self.pulled_display, None, "Nothing pulled yet.")
-            self._set_feedback(
-                "No synced text yet. Windows clipboard was not changed.",
-                kind="info",
-            )
+            self._update_buttons()
+            self._set_feedback("No synced text yet.", kind="info")
             return
         pulled_text = str(item.content)
         self.latest_pulled_text = pulled_text
         self._set_text_display(self.pulled_display, pulled_text, "Nothing pulled yet.")
+        self._update_buttons()
+        self._set_feedback("Latest text pulled successfully.", kind="success")
+
+    def _copy_succeeded(self, content: object) -> None:
+        copied_text = str(content)
         self._set_feedback(
-            f"Pulled {len(pulled_text)} characters to the Windows clipboard.",
+            f"Copied {len(copied_text)} characters to the Windows clipboard.",
             kind="success",
         )
 
@@ -722,6 +984,7 @@ class ClipboardSyncWindow(tk.Tk):
         self.login_card.grid_remove()
         self.session_content.grid(row=0, column=0, sticky="nsew")
         self.account.set(email)
+        self._fit_signed_in_window()
         self.scroller.canvas.yview_moveto(0)
         self.focus_set()
         self._update_buttons()
@@ -741,9 +1004,12 @@ class ClipboardSyncWindow(tk.Tk):
         self.sign_in_button.configure(state=state)
         self.push_button.configure(state=state)
         self.pull_button.configure(state=state)
+        copy_state = "disabled" if self.busy or self.latest_pulled_text is None else "normal"
+        self.copy_button.configure(state=copy_state)
         self.logout_button.configure(state=state)
 
     def _set_feedback(self, message: str, *, kind: FeedbackKind = "info") -> None:
+        self.feedback_kind = kind
         self.feedback.set(message)
         self.feedback_icon.set({"info": "i", "success": "✓", "error": "!"}[kind])
         background = COLORS[f"{kind}_background"]
@@ -753,6 +1019,9 @@ class ClipboardSyncWindow(tk.Tk):
         self.feedback_label.configure(background=background, foreground=foreground)
 
     def _close(self) -> None:
+        if self._theme_job is not None:
+            self.after_cancel(self._theme_job)
+            self._theme_job = None
         self.executor.shutdown(wait=False, cancel_futures=True)
         self.destroy()
 

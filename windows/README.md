@@ -6,7 +6,7 @@ MVP requirements:
 
 - Supabase email/password authentication.
 - Manual text push from the desktop input or, when using the CLI, the Windows clipboard.
-- Manual latest-text pull into the Windows clipboard.
+- Manual latest-text pull with a separate copy-to-clipboard action in the GUI.
 - Device registration for the signed-in user.
 
 ## Setup
@@ -44,7 +44,7 @@ uv run clipboard-sync-windows-gui
 
 Sign in with the same Supabase Auth user as the iPhone app. The window uses the same rounded, grouped Push/Pull layout as the iPhone client. It can push text entered or pasted into the app, pull and display the latest synced text, restore the saved session after reopening, and log out. Expected offline and authentication failures appear as compact in-app feedback rather than tracebacks.
 
-The interface supports keyboard navigation and Enter-to-sign-in. Type or paste text into **Text to push**, then select **Push Text**. If the box is empty, that same explicit action reads and uploads the current Windows clipboard, then shows the uploaded text in the box. **Latest synced text** is selectable and is also copied to the Windows clipboard after a successful pull. The app does not monitor the clipboard in the background and clears both text areas when the user logs out.
+The interface supports keyboard navigation and Enter-to-sign-in. Type or paste text into **Push**, then select **Push Text**. If the box is empty, that same explicit action reads and uploads the current Windows clipboard, then shows the uploaded text in the box. **Pull Latest** only displays the newest synced text; select **Copy to Clipboard** when you want to place it on the Windows clipboard. The copy button remains disabled until text has been pulled. The app does not monitor the clipboard in the background and clears both text areas when the user logs out.
 
 This is the first Milestone 6 desktop version. It runs through `uv`; packaging it as a standalone installer is not part of this initial UI slice.
 

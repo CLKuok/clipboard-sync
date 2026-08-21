@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from clipboard_sync.gui import COLORS, DesktopController, default_device_name
+from clipboard_sync.gui import COLORS, DARK_COLORS, LIGHT_COLORS, DesktopController, default_device_name
 from clipboard_sync.state import AppState
 from clipboard_sync.supabase_client import AuthenticationRequiredError
 
@@ -102,7 +102,7 @@ def test_gui_empty_pull_does_not_change_clipboard():
     controller.clipboard_writer.assert_not_called()
 
 
-def test_gui_pull_copies_latest_text():
+def test_gui_pull_waits_for_explicit_copy_action():
     state = AppState(access_token="access", refresh_token="refresh", user_id="user-id")
     controller, _, sync = _controller(state)
     controller.sync = sync
@@ -110,6 +110,9 @@ def test_gui_pull_copies_latest_text():
     sync.pull_latest_clipboard_text.return_value = item
 
     assert controller.pull() is item
+    controller.clipboard_writer.assert_not_called()
+
+    assert controller.copy_to_clipboard(item.content) == "latest text"
     controller.clipboard_writer.assert_called_once_with("latest text")
 
 
@@ -145,6 +148,8 @@ def test_gui_logout_clears_session_and_keeps_returned_install_state():
 def test_gui_theme_has_distinct_feedback_colours():
     assert COLORS["success"] != COLORS["error"]
     assert COLORS["info_background"] != COLORS["error_background"]
+    assert DARK_COLORS["background"] != LIGHT_COLORS["background"]
+    assert DARK_COLORS["surface"] != LIGHT_COLORS["surface"]
 
 
 def test_default_device_name_is_user_readable():
