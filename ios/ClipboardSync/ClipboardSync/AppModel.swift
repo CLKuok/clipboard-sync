@@ -33,17 +33,20 @@ final class AppModel: ObservableObject {
     private let service: ClipboardSyncServicing
     private let identityStore: DeviceIdentityStoring
     private let deviceName: String
+    private let clipboardTextProvider: () -> String?
     private var authTask: Task<Void, Never>?
     private var establishingUserID: UUID?
 
     init(
         service: ClipboardSyncServicing,
         identityStore: DeviceIdentityStoring,
-        deviceName: String
+        deviceName: String,
+        clipboardTextProvider: @escaping () -> String? = { nil }
     ) {
         self.service = service
         self.identityStore = identityStore
         self.deviceName = deviceName
+        self.clipboardTextProvider = clipboardTextProvider
     }
 
     func start() {
@@ -84,17 +87,27 @@ final class AppModel: ObservableObject {
             try await service.signOut()
             applySignedOutState()
         } catch {
-            operation = nil
-            errorMessage = userMessage(for: error)
+            if !applyAuthenticationFailure(error) {
+                operation = nil
+                errorMessage = userMessage(for: error)
+            }
         }
     }
 
     func pushText() async {
         guard !isBusy else { return }
-        guard !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "Enter or paste some text before pushing."
-            statusMessage = nil
-            return
+        let content: String
+        if draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            guard let clipboardText = clipboardTextProvider(),
+                  !clipboardText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                errorMessage = "Enter text or copy some text to the clipboard before pushing."
+                statusMessage = nil
+                return
+            }
+            draftText = clipboardText
+            content = clipboardText
+        } else {
+            content = draftText
         }
 
         clearFeedback()
@@ -106,12 +119,14 @@ final class AppModel: ObservableObject {
             _ = try await service.pushText(
                 ClipboardPushRequest(
                     sourceDeviceID: refreshedDeviceID,
-                    content: draftText
+                    content: content
                 )
             )
             statusMessage = "Text pushed successfully."
         } catch {
-            errorMessage = userMessage(for: error)
+            if !applyAuthenticationFailure(error) {
+                errorMessage = userMessage(for: error)
+            }
         }
 
         operation = nil
@@ -131,7 +146,9 @@ final class AppModel: ObservableObject {
                 statusMessage = "No synced text yet."
             }
         } catch {
-            errorMessage = userMessage(for: error)
+            if !applyAuthenticationFailure(error) {
+                errorMessage = userMessage(for: error)
+            }
         }
 
         operation = nil
@@ -174,7 +191,9 @@ final class AppModel: ObservableObject {
             registeredDeviceID = try await service.upsertDevice(deviceRequest())
             statusMessage = "Device ready."
         } catch {
-            errorMessage = "Signed in, but device registration failed: \(userMessage(for: error))"
+            if !applyAuthenticationFailure(error) {
+                errorMessage = "Signed in, but device registration failed: \(userMessage(for: error))"
+            }
         }
 
         establishingUserID = nil
@@ -207,5 +226,17 @@ final class AppModel: ObservableObject {
     private func userMessage(for error: Error) -> String {
         let message = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         return message.isEmpty ? "Something went wrong. Please try again." : message
+    }
+
+    @discardableResult
+    private func applyAuthenticationFailure(_ error: Error) -> Bool {
+        guard let syncError = error as? SyncServiceError,
+              syncError.requiresAuthentication else {
+            return false
+        }
+
+        applySignedOutState()
+        errorMessage = userMessage(for: syncError)
+        return true
     }
 }

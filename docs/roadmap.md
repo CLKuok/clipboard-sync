@@ -93,6 +93,8 @@ Verification completed:
 
 ## Milestone 5: MVP Hardening
 
+Status: complete.
+
 - Handle offline state.
 - Handle authentication failures.
 - Handle empty clipboard text.
@@ -107,14 +109,46 @@ Acceptance criteria:
 - Setup docs are complete enough for a beginner to recreate the project.
 - No secrets, tokens, or real clipboard contents are committed.
 
-## Milestone 6: Future Improvements
+Automated verification completed:
 
-- Clipboard automation.
-- Supabase realtime subscriptions.
-- Better clipboard history UI.
-- Optional local sync can be reconsidered later, but it is not part of the first simple MVP.
+- Windows configuration, authentication, offline, empty-text, empty-pull, sync-failure, device, and push/pull tests pass.
+- The iOS app builds and its authentication, offline, empty-state, device, and push/pull tests pass on iPhone 17 Pro/iOS 26.5 simulator.
+- No schema or authentication-model change was required.
+
+Live verification completed:
+
+- Friendly offline feedback was confirmed on a physical iPhone and the Windows CLI on 2026-08-21.
+- Public/university Wi-Fi testing is explicitly deferred until a suitable network is available; this is non-blocking under the "where possible" acceptance criterion.
+
+## Milestone 6: Desktop and App Presentation
+
+Status: complete; accepted with follow-up verification explicitly deferred.
+
+- Add a simple Windows desktop interface while keeping the working CLI available.
+- Reuse the hardened authentication, device registration, and manual push/pull services.
+- Add an original iOS app icon and include it in the Xcode asset catalog.
+- Keep synchronization manual and text-only during this UI improvement.
 
 Acceptance criteria:
 
-- Future improvements are only started after the manual text-only MVP works reliably.
-- Automation or realtime changes do not break the manual sync path.
+- The Windows desktop interface can sign in, restore a session, push the current clipboard, pull the latest text, log out, and show useful progress/error states.
+- The Windows CLI remains available and compatible with the iPhone client.
+- The iPhone app builds with its own app icon.
+- Existing Windows and iOS automated checks continue to pass.
+- No automatic clipboard monitoring, realtime subscriptions, history browser, schema change, or binary content is added.
+
+Later improvements such as automation, realtime updates, richer history, or optional local sync remain outside this milestone.
+
+Implementation completed:
+
+- Windows and iPhone now use one icon-led blue/cyan presentation with matching headers, grouped Push/Pull sections, account context, and inline progress/success/error feedback.
+- Both GUIs accept manually entered or pasted text and fall back to reading text from the system clipboard only after an explicit push with an empty box; the unchanged Windows CLI continues to push the current clipboard through the same sync services.
+- The iPhone app keeps its editable push text and selectable pulled text while using the same presentation hierarchy.
+- All 34 Windows automated tests pass, and a Windows GUI smoke check confirms both screens render with the expected controls and window icon.
+
+Acceptance decision:
+
+- Milestone 6 was accepted and closed by the project owner on 2026-08-22 so Milestone 7 can begin.
+- The refreshed iPhone build and mocked tests still need to be run in Xcode because Xcode is unavailable in the Windows development environment.
+- A final side-by-side visual comparison and one synthetic text sync in each direction remain explicitly deferred, non-blocking follow-up checks.
+- If a deferred check reveals a presentation regression, fix it without expanding Milestone 7's photo/file scope.
